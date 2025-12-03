@@ -1,0 +1,32 @@
+# --- Python Bytecode e Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Ambientes Virtuais ---
+.venv/
+
+# --- Variáveis de Ambiente (SEGURANÇA) ---
+# Jamais versione suas chaves secretas
+.env
+
+# --- IDEs e Editores ---
+.vscode/
+.idea/
+*.swp
+
+# --- Testes e Cobertura (Pytest/Coverage) ---
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# --- Distribuição e Empacotamento ---
+dist/
+build/
+*.egg-info/
+
+# --- Logs ---
+*.log
+
+.history
