@@ -66,7 +66,6 @@ async def get_patrimony_item(item_nome: str, current_user: Usuario = Depends(get
     
     item["id"] = str(item["_id"])
     return item
-
 @router.put("/{item_nome}", response_model=PatrimonioResponse)
 async def update_patrimony_item(
     item_nome: str,
@@ -74,11 +73,11 @@ async def update_patrimony_item(
     db = Depends(get_mongo_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    # RF16: Membros, Coordenadores e Presidente podem alterar status e localização
+    # RF16: Permissões de Edição
     if current_user.cargo not in [CargoEnum.Presidente, CargoEnum.Coordenador, CargoEnum.Membro]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acesso negado.")
 
-    # Busca o item original
+    # Busca item original
     original_item = await db.patrimonio.find_one({"nome": item_nome})
     if not original_item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Item '{item_nome}' não encontrado.")
@@ -98,41 +97,53 @@ async def update_patrimony_item(
                 detail=f"Não é possível renomear. Já existe um item com o nome '{novo_nome}'."
             )
             
-    # --- IMPLEMENTAÇÃO DAS REGRAS DE NEGÓCIO RN13 e RN14 ---
+    # --- VALIDAÇÃO RIGOROSA DAS REGRAS DE NEGÓCIO ---
     
     novo_status = update_dict.get("status")
     status_atual = original_item.get("status")
     
-    # RN13: Status "Em Uso" exige localização
+    # RN13: Status "Em Uso" exige Localização E Membro Responsável
     if novo_status == "Em Uso":
-        # Verifica se a localização foi enviada AGORA ou se JÁ EXISTE no item
-        nova_localizacao = update_dict.get("localizacao")
-        localizacao_existente = original_item.get("localizacao")
-        
-        if not nova_localizacao and not localizacao_existente:
+        # Validação de Localização
+        nova_localizacao = update_dict.get("localizacao") or original_item.get("localizacao")
+        # Validação de Responsável (Membro)
+        # Nota: Estamos assumindo que o campo no Mongo é 'responsavel_id' ou 'usuario_id'
+        # Se o usuário não enviou um responsável, assumimos que quem está atualizando (current_user) é o responsável?
+        # Pela regra estrita "se um membro... for informado", devemos exigir o dado ou vincular o current_user explicitamente.
+        novo_responsavel = update_dict.get("responsavel_id") or original_item.get("responsavel_id")
+
+        if not nova_localizacao:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="RN13: Para alterar o status para 'Em Uso', é obrigatório informar a localização."
+                detail="RN13: Para alterar status para 'Em Uso', a localização é obrigatória."
+            )
+        
+        # Se não houver responsável vinculado, vinculamos automaticamente o usuário atual ou exigimos o campo
+        if not novo_responsavel:
+             # Opção A: Auto-atribuir (mais fluido)
+             update_dict["responsavel_id"] = current_user.id
+             # Opção B (Mais estrita): raise HTTPException se quiser forçar o envio manual
+    
+    # RN14: De "Em Manutenção" para "Disponível" exige registro
+    if status_atual == "Em Manutenção" and novo_status == "Disponível":
+        # Verifica se há uma descrição do reparo ou data explícita
+        if "descricao" not in update_dict and "detalhes" not in update_dict:
+             raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="RN14: Para finalizar a manutenção, é necessário informar os detalhes/conclusão do reparo."
             )
 
-    # RN14: De "Em Manutenção" para "Disponível" exige registro de conclusão
-    if status_atual == "Em Manutenção" and novo_status == "Disponível":
-      
-        if "descricao" not in update_dict and "detalhes" not in update_dict: 
-           
-             pass 
-             
+    # -------------------------------------------------------
 
-
+    # Sanitização de Datas
     if 'data_aquisicao' in update_dict and isinstance(update_dict['data_aquisicao'], date) and not isinstance(update_dict['data_aquisicao'], datetime):
         update_dict['data_aquisicao'] = datetime.combine(update_dict['data_aquisicao'], datetime.min.time())
 
-  
+    # Montagem do Histórico
     detalhes_historico = f"Campos atualizados: {', '.join(update_dict.keys())}"
     
-
     if status_atual == "Em Manutenção" and novo_status == "Disponível":
-        detalhes_historico += ". Manutenção concluída."
+        detalhes_historico += ". Manutenção registrada e concluída."
 
     historico_entry = {
         "timestamp": datetime.now(timezone.utc),
