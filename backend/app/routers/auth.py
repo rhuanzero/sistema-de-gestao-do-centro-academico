@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models.sql_models import Usuario, CentroAcademico, StatusEnum, CargoEnum
 from app.security import (

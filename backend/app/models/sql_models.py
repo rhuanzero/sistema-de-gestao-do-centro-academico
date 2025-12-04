@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
 from datetime import datetime
+from enum import IntEnum
 
 class TipoTransacao(str, enum.Enum):
     Receita = "Receita"
@@ -14,6 +15,15 @@ class CargoEnum(str, enum.Enum):
     Tesoureiro = "Tesoureiro"
     Coordenador = "Coordenador"
     Membro = "Membro"
+
+class DepartamentoEnum(IntEnum):
+    Presidencia = 1
+    Financeiro = 2
+    Eventos = 3
+    Comunicacao = 4
+    Patrimonio = 5
+    def __int__(self):
+        return self.value
 
 class StatusEnum(str, enum.Enum):
     Ativo = "Ativo"
@@ -31,7 +41,6 @@ class CentroAcademico(Base):
     # Relacionamentos
     departamentos = relationship("Departamento", back_populates="centro_academico", cascade="all, delete-orphan")
     usuarios = relationship("Usuario", back_populates="centro_academico", cascade="all, delete-orphan")
-    categorias = relationship("CategoriaFinanceira", back_populates="centro_academico", cascade="all, delete-orphan")
     transacoes = relationship("Transacao", back_populates="centro_academico", cascade="all, delete-orphan")
 
 class Departamento(Base):
@@ -71,20 +80,6 @@ class Usuario(Base):
     def __repr__(self):
         return f"<Usuario(id={self.id}, nome='{self.nome}', email='{self.email}')>"
 
-class CategoriaFinanceira(Base):
-    __tablename__ = "categorias_financeiras"
-    
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nome = Column(String(50), nullable=False)
-    tipo = Column(Enum(TipoTransacao), nullable=False)
-    
-    # Relacionamento com Centro Acadêmico
-    centro_academico_id = Column(Integer, ForeignKey("centro_academico.id"), nullable=False)
-    centro_academico = relationship("CentroAcademico", back_populates="categorias")
-    
-    # Relacionamento com Transações
-    transacoes = relationship("Transacao", back_populates="categoria")
-
 class Transacao(Base):
     __tablename__ = "transacoes"
     
@@ -95,12 +90,10 @@ class Transacao(Base):
     data = Column(DateTime, default=func.now(), nullable=False)
     
     # Chaves estrangeiras
-    categoria_id = Column(Integer, ForeignKey('categorias_financeiras.id'), nullable=False)
     usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
     centro_academico_id = Column(Integer, ForeignKey('centro_academico.id'), nullable=False)
-    
+     
     # Relacionamentos
-    categoria = relationship("CategoriaFinanceira", back_populates="transacoes")
     usuario = relationship("Usuario", back_populates="transacoes")
     centro_academico = relationship("CentroAcademico", back_populates="transacoes")
 

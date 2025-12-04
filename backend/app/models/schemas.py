@@ -94,29 +94,14 @@ class UsuarioResponse(UsuarioBase):
     
     model_config = ConfigDict(from_attributes=True)
 
-# --- Schemas de Categoria Financeira ---
-class CategoriaFinanceiraBase(BaseModel):
-    nome: str
-    tipo: str = Field(pattern="^(Receita|Despesa)$")
-    centro_academico_id: int
-
-class CategoriaFinanceiraCreate(CategoriaFinanceiraBase):
-    pass
-
-class CategoriaFinanceiraResponse(CategoriaFinanceiraBase):
-    id: int
-    
-    model_config = ConfigDict(from_attributes=True)
-
 # --- Schemas de Transação ---
 class TransacaoBase(BaseModel):
     descricao: str
     valor: float = Field(..., gt=0)
     data: datetime
     tipo: str = Field(pattern="^(Receita|Despesa)$")
-    categoria_id: int
-    usuario_id: int
-    centro_academico_id: int
+    usuario_id: int 
+    centro_academico_id: int = 1
 
 class TransacaoCreate(TransacaoBase):
     pass
@@ -126,7 +111,6 @@ class TransacaoUpdate(BaseModel):
     valor: Optional[float] = None
     data: Optional[datetime] = None
     tipo: Optional[str] = Field(None, pattern="^(Receita|Despesa)$")
-    categoria_id: Optional[int] = None
 
 class TransacaoResponse(TransacaoBase):
     id: int

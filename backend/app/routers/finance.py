@@ -4,17 +4,15 @@ from sqlalchemy import select, func, update, and_
 from app.database import get_db
 from app.models.sql_models import (
     Transacao, Usuario, CargoEnum, TipoTransacao, 
-    CentroAcademico, CategoriaFinanceira
+    CentroAcademico
 )
-from app.models.schemas import (
-    TransacaoCreate, TransacaoResponse, TransacaoUpdate,
-    CategoriaFinanceiraCreate, CategoriaFinanceiraResponse
-)
+from app.models.schemas import TransacaoCreate, TransacaoResponse
 from app.security import get_current_user
-from datetime import date, datetime
-from typing import List, Optional
+from datetime import datetime, timedelta, date as date_type
+from typing import Union
 from decimal import Decimal
 import logging
+
 
 router = APIRouter(prefix="/finance", tags=["Módulo Financeiro"])
 
@@ -30,14 +28,7 @@ async def atualizar_saldo_ca(
 ) -> None:
     """
     Atualiza o saldo do Centro Acadêmico de forma atômica.
-    
-    Args:
-        db: Sessão do banco de dados
-        centro_academico_id: ID do Centro Acadêmico
-        valor: Valor da transação (sempre positivo)
-        tipo: Tipo de transação (Receita/Despesa)
     """
-    # Usando expressão SQL direta para atualização atômica
     if tipo == TipoTransacao.Receita:
         stmt = (
             update(CentroAcademico)
@@ -60,62 +51,47 @@ async def create_transaction(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Cria uma nova transação financeira e atualiza o saldo do Centro Acadêmico.
-    Apenas Tesoureiros podem registrar transações.
-    """
-    # Verificação de permissão
-    if current_user.cargo != CargoEnum.Tesoureiro:
+    # 1. Fail Fast: Verificação de permissão usando Set (mais performático que List)
+    if current_user.cargo not in {CargoEnum.Tesoureiro, CargoEnum.Presidente}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas o Tesoureiro pode registrar transações."
+            detail="Acesso restrito à Tesouraria ou Presidência."
         )
-    
-    # Verifica se a categoria pertence ao mesmo CA do usuário
-    categoria = await db.get(CategoriaFinanceira, transacao.categoria_id)
-    if not categoria or categoria.centro_academico_id != current_user.centro_academico_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Categoria não encontrada ou não pertence ao seu Centro Acadêmico."
-        )
-    
-    # Verifica se o tipo da transação bate com o tipo da categoria
-    if categoria.tipo.value != transacao.tipo:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Tipo de transação inválido para a categoria selecionada. Esperado: {categoria.tipo}"
-        )
-    
+
+    # 2. Sanitização: Garante que IDs venham do token, não do corpo da requisição
+    # Resolve o erro de "multiple values for keyword argument"
+    dados_transacao = transacao.model_dump(exclude={"usuario_id", "centro_academico_id"})
+
     try:
-        # Inicia uma transação atômica
-        async with db.begin():
-            # Cria a transação
-            nova_transacao = Transacao(
-                **transacao.model_dump(exclude={"centro_academico_id"}),
-                usuario_id=current_user.id,
-                centro_academico_id=current_user.centro_academico_id
-            )
-            db.add(nova_transacao)
-            await db.flush()  # Obtém o ID da transação
-            
-            # Atualiza o saldo do CA
-            valor_decimal = Decimal(str(transacao.valor))
-            await atualizar_saldo_ca(
-                db=db,
-                centro_academico_id=current_user.centro_academico_id,
-                valor=valor_decimal,
-                tipo=TipoTransacao(transacao.tipo)
-            )
-            
-            await db.refresh(nova_transacao)
-            return nova_transacao
-            
+        # 3. Criação do Objeto
+        nova_transacao = Transacao(
+            **dados_transacao,
+            usuario_id=current_user.id,
+            centro_academico_id=current_user.centro_academico_id
+        )
+        
+        db.add(nova_transacao)
+        
+        # 4. Atualização de Saldo
+        # Nota: Assume-se que 'transacao.valor' já é Decimal no Pydantic
+        await atualizar_saldo_ca(
+            db=db,
+            centro_academico_id=current_user.centro_academico_id,
+            valor=transacao.valor,
+            tipo=transacao.tipo
+        )
+        
+        await db.commit()
+        await db.refresh(nova_transacao)
+        
+        return nova_transacao
+        
     except Exception as e:
-        logger.error(f"Erro ao criar transação: {str(e)}")
+        logger.error(f"Erro processando transação: {repr(e)}") # Log mais detalhado com repr()
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Ocorreu um erro ao processar a transação."
+            detail="Falha ao processar a transação financeira."
         )
 
 @router.get("/balance", response_model=dict)
@@ -133,7 +109,6 @@ async def get_balance(
             detail="Acesso negado. Apenas Presidente e Tesoureiro podem acessar."
         )
     
-    # Busca o CA do usuário atual
     ca = await db.get(CentroAcademico, current_user.centro_academico_id)
     if not ca:
         raise HTTPException(
@@ -141,7 +116,6 @@ async def get_balance(
             detail="Centro Acadêmico não encontrado."
         )
     
-    # Calcula totais para validação
     receitas = await db.execute(
         select(func.sum(Transacao.valor))
         .where(and_(
@@ -162,8 +136,7 @@ async def get_balance(
     total_despesas = despesas.scalar() or Decimal('0')
     saldo_calculado = total_receitas - total_despesas
     
-    # Verificação de consistência (opcional, para debug)
-    if abs(float(ca.saldo - saldo_calculado)) > 0.01:  # Tolerância para arredondamentos
+    if abs(float(ca.saldo - saldo_calculado)) > 0.01:
         logger.warning(
             f"Inconsistência de saldo detectada para CA {ca.id}. "
             f"Saldo armazenado: {ca.saldo}, Saldo calculado: {saldo_calculado}"
@@ -176,141 +149,75 @@ async def get_balance(
         "ultima_atualizacao": datetime.now().isoformat()
     }
 
+
 @router.get("/report", response_model=dict)
 async def generate_report(
-    start_date: date, 
-    end_date: date, 
-    categoria_id: Optional[int] = None,
+    start_date: Union[datetime, date_type] = date_type(1990, 1, 1), 
+    end_date: Union[datetime, date_type] = date_type.today(),
     current_user: Usuario = Depends(get_current_user), 
     db: AsyncSession = Depends(get_db)
 ):
     """
     Gera um relatório financeiro para o período especificado.
-    Apenas Tesoureiros podem gerar relatórios.
+    Retorna todas as transações entre as datas fornecidas.
+    Aceita tanto datas (YYYY-MM-DD) quanto datetimes completos (YYYY-MM-DDTHH:MM:SS).
     """
-    if current_user.cargo != CargoEnum.Tesoureiro:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas o Tesoureiro pode gerar relatórios."
-        )
-    
-    # Constrói a consulta base
-    query = (
-        select(Transacao, CategoriaFinanceira.nome.label("categoria_nome"), Usuario.nome.label("usuario_nome"))
-        .join(CategoriaFinanceira, Transacao.categoria_id == CategoriaFinanceira.id)
+    # Converte date para datetime se necessário e ajusta para o início e fim do dia
+    if isinstance(start_date, date_type):
+        start_of_day = datetime.combine(start_date, datetime.min.time())
+    else:
+        start_of_day = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+    if isinstance(end_date, date_type):
+        end_of_day = datetime.combine(end_date, datetime.max.time())
+    else:
+        end_of_day = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+    # Busca as transações no período
+    result = await db.execute(
+        select(Transacao, Usuario.nome.label("usuario_nome"))
         .join(Usuario, Transacao.usuario_id == Usuario.id)
         .where(
             Transacao.centro_academico_id == current_user.centro_academico_id,
-            Transacao.data_transacao >= start_date,
-            Transacao.data_transacao <= end_date
+            Transacao.data >= start_of_day,
+            Transacao.data <= end_of_day
         )
+        .order_by(Transacao.data.desc(), Transacao.id.desc())
     )
     
-    # Filtra por categoria, se especificada
-    if categoria_id is not None:
-        query = query.where(Transacao.categoria_id == categoria_id)
-    
-    # Ordena por data
-    query = query.order_by(Transacao.data_transacao.desc(), Transacao.id.desc())
-    
-    # Executa a consulta
-    result = await db.execute(query)
     transacoes = result.all()
     
     # Calcula totais
     totais = {"receitas": Decimal('0'), "despesas": Decimal('0')}
     
-    for transacao in transacoes:
-        if transacao.Transacao.tipo == TipoTransacao.Receita:
-            totais["receitas"] += transacao.Transacao.valor
-        else:
-            totais["despesas"] += transacao.Transacao.valor
-    
     # Formata os resultados
     dados_formatados = []
     for transacao in transacoes:
+        valor = transacao.Transacao.valor
+        if transacao.Transacao.tipo == TipoTransacao.Receita:
+            totais["receitas"] += valor
+        else:
+            totais["despesas"] += valor
+            
         dados_formatados.append({
             "id": transacao.Transacao.id,
-            "data": transacao.Transacao.data_transacao.isoformat(),
+            "data": transacao.Transacao.data.isoformat(),
             "descricao": transacao.Transacao.descricao,
-            "valor": float(transacao.Transacao.valor),
+            "valor": float(valor),
             "tipo": transacao.Transacao.tipo.value,
-            "categoria": transacao.categoria_nome,
-            "responsavel": transacao.usuario_nome,
-            "evento_id": transacao.Transacao.evento_mongo_id
+            "responsavel": transacao.usuario_nome
         })
     
     return {
-        "periodo": {"inicio": start_date.isoformat(), "fim": end_date.isoformat()},
-        "saldo_inicial": 0,  # Pode ser implementado se necessário
-        "saldo_final": float(totais["receitas"] - totais["despes"]),
+        "periodo": {
+            "inicio": start_date.isoformat(), 
+            "fim": end_date.isoformat()
+        },
         "total_receitas": float(totais["receitas"]),
         "total_despesas": float(totais["despesas"]),
+        "saldo_periodo": float(totais["receitas"] - totais["despesas"]),
         "transacoes": dados_formatados,
-        "gerado_em": datetime.now().isoformat(),
-        "gerado_por": current_user.nome
+        "total_registros": len(dados_formatados),
+        "gerado_em": datetime.now().isoformat()
     }
-
-# Rotas para Categorias Financeiras
-@router.post("/categories", response_model=CategoriaFinanceiraResponse, status_code=status.HTTP_201_CREATED)
-async def create_category(
-    categoria: CategoriaFinanceiraCreate,
-    current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Cria uma nova categoria financeira.
-    Apenas Tesoureiros podem criar categorias.
-    """
-    if current_user.cargo != CargoEnum.Tesoureiro:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas o Tesoureiro pode criar categorias financeiras."
-        )
     
-    # Verifica se já existe uma categoria com o mesmo nome no mesmo CA
-    existing = await db.execute(
-        select(CategoriaFinanceira)
-        .where(
-            CategoriaFinanceira.nome == categoria.nome,
-            CategoriaFinanceira.centro_academico_id == current_user.centro_academico_id
-        )
-    )
-    
-    if existing.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Já existe uma categoria com este nome no seu Centro Acadêmico."
-        )
-    
-    # Cria a nova categoria
-    nova_categoria = CategoriaFinanceira(
-        **categoria.model_dump(),
-        centro_academico_id=current_user.centro_academico_id
-    )
-    
-    db.add(nova_categoria)
-    await db.commit()
-    await db.refresh(nova_categoria)
-    
-    return nova_categoria
-
-@router.get("/categories", response_model=List[CategoriaFinanceiraResponse])
-async def list_categories(
-    tipo: Optional[str] = None,
-    current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Lista as categorias financeiras do Centro Acadêmico.
-    Filtra por tipo (Receita/Despesa) se especificado.
-    """
-    query = select(CategoriaFinanceira).where(
-        CategoriaFinanceira.centro_academico_id == current_user.centro_academico_id
-    )
-    
-    if tipo:
-        query = query.where(CategoriaFinanceira.tipo == tipo)
-    
-    result = await db.execute(query)
-    return result.scalars().all()

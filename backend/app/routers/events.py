@@ -6,6 +6,7 @@ from app.models.schemas import EventoCreate, Tarefa, Patrocinio
 from app.security import get_current_user
 from app.models.sql_models import Usuario, CargoEnum, Departamento
 from bson import ObjectId
+from datetime import datetime
 
 router = APIRouter(prefix="/events", tags=["Gestão de Eventos"])
 
@@ -19,16 +20,61 @@ async def create_event(
     if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
         raise HTTPException(status_code=403, detail="Permissão insuficiente.")
     
-    evento_dict = evento.model_dump()
-    evento_dict["tarefas"] = [] # Inicia lista vazia
+    # Verifica se já existe um evento com o mesmo título
+    existing = await db.eventos.find_one({"titulo": {"$regex": f"^{evento.titulo}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Já existe um evento com este título")
+    
+    evento_dict = evento.dict()
+    evento_dict["tarefas"] = []  # Inicia lista vazia
     evento_dict["patrocinios"] = []
+    evento_dict["criado_em"] = datetime.utcnow()
+    evento_dict["criado_por"] = {
+        "id": str(current_user.id),
+        "nome": current_user.nome
+    }
     
     new_event = await db.eventos.insert_one(evento_dict)
     return {"id": str(new_event.inserted_id), "message": "Evento criado com sucesso"}
 
-@router.post("/{evento_id}/tasks")
+@router.get("/")
+async def list_events(
+    db = Depends(get_mongo_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Busca todos os eventos ordenados por data de criação (mais recentes primeiro)
+    events = await db.eventos.find().sort("criado_em", -1).to_list(length=1000)
+    
+    # Processamento para serialização
+    results = []
+    for event in events:
+        event["id"] = str(event["_id"])
+        del event["_id"]
+        results.append(event)
+        
+    return results
+
+@router.get("/{evento_titulo}")
+async def get_event(
+    evento_titulo: str,
+    db = Depends(get_mongo_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Busca o evento pelo título exato (case-insensitive)
+    event = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+    
+    # Converte o ObjectId para string
+    event["id"] = str(event["_id"])
+    del event["_id"]
+    
+    return event
+
+@router.post("/{evento_titulo}/tasks")
 async def add_task_to_event(
-    evento_id: str,
+    evento_titulo: str,
     tarefa: Tarefa,
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db),
@@ -45,46 +91,102 @@ async def add_task_to_event(
 
         if responsavel.departamento_id != current_user.departamento_id:
             raise HTTPException(status_code=403, detail="Coordenadores só podem atribuir tarefas a membros do seu próprio departamento.")
-    elif current_user.cargo != CargoEnum.Presidente:
+    elif current_user.cargo != CargoEnum.Presidente and current_user.cargo != CargoEnum.Coordenador:
         raise HTTPException(status_code=403, detail="Permissão insuficiente para adicionar tarefas.")
 
-    result = await db.eventos.update_one(
-        {"_id": ObjectId(evento_id)},
-        {"$push": {"tarefas": tarefa.model_dump()}}
-    )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Evento não encontrado")
-    return {"message": "Tarefa adicionada"}
+    try:
+        # Busca o evento pelo título (case-insensitive)
+        evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+        
+        if not evento:
+            raise HTTPException(status_code=404, detail="Evento não encontrado")
 
-@router.put("/{evento_id}/tasks/{task_internal_id}/status") # UC05
+        # Gera um ID único para a tarefa
+        task_id = len(evento.get("tarefas", [])) + 1
+
+        # Adiciona a tarefa ao array de tarefas do evento
+        result = await db.eventos.update_one(
+            {"_id": evento["_id"]},
+            {"$push": {
+                "tarefas": {
+                    **tarefa.dict(),
+                    "id_interno": task_id,
+                    "criado_em": datetime.utcnow(),
+                    "criado_por": {
+                        "id": str(current_user.id),
+                        "nome": current_user.nome
+                    }
+                }
+            }}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=400, detail="Falha ao adicionar tarefa ao evento")
+            
+        return {"message": "Tarefa adicionada com sucesso", "task_id": task_id}
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar a requisição: {str(e)}")
+
+@router.put("/{evento_titulo}/tasks/{task_id}/status")
 async def update_task_status(
-    evento_id: str,
-    task_internal_id: int,
+    evento_titulo: str,
+    task_id: int,
     status: str = Body(..., embed=True),
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
 ):
-    # Membro atualiza tarefa
-    filter_query = {
-        "_id": ObjectId(evento_id),
-        "tarefas.id_interno": task_internal_id,
-        "tarefas.usuario_responsavel_id": current_user.id # Apenas a própria tarefa
-    }
+    # Encontra o evento pelo título
+    evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    # Verifica se o usuário tem permissão (Presidente, Coordenador ou é o responsável)
+    is_allowed = (current_user.cargo in [CargoEnum.Presidente, CargoEnum.Coordenador])
     
-    update_query = {
-        "$set": {"tarefas.$.status": status}
-    }
-    
-    result = await db.eventos.update_one(filter_query, update_query)
+    # Se não for Presidente nem Coordenador, verifica se é o responsável pela tarefa
+    if not is_allowed:
+        # Encontra a tarefa específica
+        for task in evento.get("tarefas", []):
+            if task.get("id_interno") == task_id:
+                if task.get("usuario_responsavel_id") == current_user.id:
+                    is_allowed = True
+                break
+
+    if not is_allowed:
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas o Presidente, Coordenador ou o responsável pela tarefa podem atualizar o status"
+        )
+
+    # Atualiza o status da tarefa
+    result = await db.eventos.update_one(
+        {
+            "_id": evento["_id"],
+            "tarefas.id_interno": task_id
+        },
+        {
+            "$set": {
+                "tarefas.$.status": status,
+                "tarefas.$.atualizado_em": datetime.utcnow(),
+                "tarefas.$.atualizado_por": {
+                    "id": str(current_user.id),
+                    "nome": current_user.nome,
+                    "cargo": current_user.cargo.value
+                }
+            }
+        }
+    )
     
     if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Tarefa não encontrada ou não pertence a você.")
-        
-    return {"message": "Status atualizado", "novo_status": status}
+        raise HTTPException(status_code=404, detail="Tarefa não encontrada")
+            
+    return {"message": "Status atualizado com sucesso", "novo_status": status}
 
-@router.post("/{evento_id}/sponsors")
+    
+@router.post("/{evento_titulo}/sponsors")
 async def add_sponsor_to_event(
-    evento_id: str,
+    evento_titulo: str,
     patrocinio: Patrocinio,
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
@@ -92,33 +194,29 @@ async def add_sponsor_to_event(
     if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
         raise HTTPException(status_code=403, detail="Permissão insuficiente.")
 
-    if not ObjectId.is_valid(evento_id):
-        raise HTTPException(status_code=400, detail="ID de evento inválido.")
+    # Encontra o evento pelo título
+    evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
 
+    # Adiciona o patrocínio
     result = await db.eventos.update_one(
-        {"_id": ObjectId(evento_id)},
-        {"$push": {"patrocinios": patrocinio.model_dump()}}
+        {"_id": evento["_id"]},
+        {
+            "$push": {
+                "patrocinios": {
+                    **patrocinio.dict(),
+                    "adicionado_em": datetime.utcnow(),
+                    "adicionado_por": {
+                        "id": str(current_user.id),
+                        "nome": current_user.nome
+                    }
+                }
+            }
+        }
     )
 
     if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Evento não encontrado.")
+        raise HTTPException(status_code=400, detail="Falha ao adicionar patrocínio ao evento")
 
     return {"message": "Patrocínio adicionado com sucesso."}
-
-@router.get("/list_events")
-async def list_events(
-    db = Depends(get_mongo_db),
-    current_user: Usuario = Depends(get_current_user)
-):
-    # Busca os eventos no MongoDB (limite de 1000 para evitar sobrecarga em testes)
-    events = await db.eventos.find().to_list(length=1000)
-    
-    # Processamento para serialização
-    results = []
-    for event in events:
-        # Converte o ObjectId para string para que o JSON possa ser gerado
-        event["id"] = str(event["_id"])
-        del event["_id"] # Remove o objeto original que causa erro
-        results.append(event)
-        
-    return results
