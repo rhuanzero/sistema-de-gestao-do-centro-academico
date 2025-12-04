@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.database import engine, Base
-from app.routers import auth, members, finance, events, communication
+from app.routers import auth, members, finance, events, communication, patrimony
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -12,7 +12,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="SGCA API - Sistema de Gestão de Centro Acadêmico",
-    description="API baseada no documento de ES1 para gestão financeira, eventos e membros.",
+    description="API para gestão do centro academico.",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -23,6 +23,7 @@ app.include_router(members.router)
 app.include_router(finance.router)
 app.include_router(events.router)
 app.include_router(communication.router)
+app.include_router(patrimony.router)
 
 @app.get("/")
 def read_root():

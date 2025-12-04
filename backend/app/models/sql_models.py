@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Date, DECIMAL
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, DECIMAL, TIMESTAMP, Text, DateTime
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
 import enum
+from datetime import datetime
 
 class TipoTransacao(str, enum.Enum):
     Receita = "Receita"
@@ -17,42 +19,90 @@ class StatusEnum(str, enum.Enum):
     Ativo = "Ativo"
     Inativo = "Inativo"
 
+class CentroAcademico(Base):
+    __tablename__ = "centro_academico"
+    
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nome = Column(String(100), nullable=False)
+    descricao = Column(Text, nullable=True)
+    saldo = Column(DECIMAL(15, 2), default=0.00, nullable=False)
+    data_criacao = Column(TIMESTAMP, server_default=func.now())
+    
+    # Relacionamentos
+    departamentos = relationship("Departamento", back_populates="centro_academico", cascade="all, delete-orphan")
+    usuarios = relationship("Usuario", back_populates="centro_academico", cascade="all, delete-orphan")
+    categorias = relationship("CategoriaFinanceira", back_populates="centro_academico", cascade="all, delete-orphan")
+    transacoes = relationship("Transacao", back_populates="centro_academico", cascade="all, delete-orphan")
+
 class Departamento(Base):
     __tablename__ = "departamentos"
+    
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nome = Column(String(50), unique=True, nullable=False)
+    nome = Column(String(50), nullable=False)
+    
+    # Relacionamento com Centro Acadêmico
+    centro_academico_id = Column(Integer, ForeignKey("centro_academico.id"), nullable=False)
+    centro_academico = relationship("CentroAcademico", back_populates="departamentos")
+    
+    # Relacionamento com Usuários
     usuarios = relationship("Usuario", back_populates="departamento")
 
 class Usuario(Base):
-    __tablename__ = "usuarios"
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    __tablename__ = 'usuarios'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     senha_hash = Column(String(255), nullable=False)
-    cpf = Column(String(14), unique=True)
-    telefone = Column(String(20))
-    cargo = Column(Enum(CargoEnum), nullable=False)
-    status = Column(Enum(StatusEnum), default=StatusEnum.Ativo, nullable=False)
-    departamento_id = Column(Integer, ForeignKey("departamentos.id"))
+    cpf = Column(String(14), unique=True, nullable=True)
+    telefone = Column(String(20), nullable=True)
+    cargo = Column(Enum(CargoEnum), nullable=False, default=CargoEnum.Membro)
+    status = Column(Enum(StatusEnum), nullable=False, default=StatusEnum.Ativo)
     
+    # Chaves estrangeiras
+    departamento_id = Column(Integer, ForeignKey('departamentos.id'), nullable=True)
+    centro_academico_id = Column(Integer, ForeignKey('centro_academico.id'), nullable=False)
+    
+    # Relacionamentos
     departamento = relationship("Departamento", back_populates="usuarios")
+    centro_academico = relationship("CentroAcademico", back_populates="usuarios")
     transacoes = relationship("Transacao", back_populates="usuario")
+
+    def __repr__(self):
+        return f"<Usuario(id={self.id}, nome='{self.nome}', email='{self.email}')>"
 
 class CategoriaFinanceira(Base):
     __tablename__ = "categorias_financeiras"
+    
     id = Column(Integer, primary_key=True, autoincrement=True)
     nome = Column(String(50), nullable=False)
     tipo = Column(Enum(TipoTransacao), nullable=False)
+    
+    # Relacionamento com Centro Acadêmico
+    centro_academico_id = Column(Integer, ForeignKey("centro_academico.id"), nullable=False)
+    centro_academico = relationship("CentroAcademico", back_populates="categorias")
+    
+    # Relacionamento com Transações
+    transacoes = relationship("Transacao", back_populates="categoria")
 
 class Transacao(Base):
     __tablename__ = "transacoes"
+    
     id = Column(Integer, primary_key=True, autoincrement=True)
-    descricao = Column(String(255), nullable=False)
-    valor = Column(DECIMAL(10, 2), nullable=False)
-    data_transacao = Column(Date, nullable=False)
+    descricao = Column(String(200), nullable=False)
+    valor = Column(DECIMAL(15, 2), nullable=False)
     tipo = Column(Enum(TipoTransacao), nullable=False)
-    categoria_id = Column(Integer, ForeignKey("categorias_financeiras.id"), nullable=False)
-    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    evento_mongo_id = Column(String(24), nullable=True) # Vínculo com Mongo
-
+    data = Column(DateTime, default=func.now(), nullable=False)
+    
+    # Chaves estrangeiras
+    categoria_id = Column(Integer, ForeignKey('categorias_financeiras.id'), nullable=False)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id'), nullable=False)
+    centro_academico_id = Column(Integer, ForeignKey('centro_academico.id'), nullable=False)
+    
+    # Relacionamentos
+    categoria = relationship("CategoriaFinanceira", back_populates="transacoes")
     usuario = relationship("Usuario", back_populates="transacoes")
+    centro_academico = relationship("CentroAcademico", back_populates="transacoes")
+
+    def __repr__(self):
+        return f"<Transacao(id={self.id}, descricao='{self.descricao}', valor={self.valor})>"
