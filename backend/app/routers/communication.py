@@ -5,6 +5,8 @@ from app.models.schemas import PostagemCreate, SolicitacaoComunicacaoCreate
 from app.security import get_current_user
 from app.models.sql_models import Usuario, CargoEnum
 from typing import Optional
+from datetime import datetime, timezone, date
+
 router = APIRouter(prefix="/communication", tags=["Comunicação e Burocrático"])
 
 @router.post("/create_posts")
@@ -13,8 +15,8 @@ async def create_post(
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
 ):
-    # Apenas Coordenadores 
-    if current_user.cargo != CargoEnum.Coordenador:
+    # Apenas Coordenadores e Presidente podem criar postagens
+    if current_user.cargo != CargoEnum.Coordenador and current_user.cargo != CargoEnum.Presidente:
          raise HTTPException(status_code=403, detail="Permissão negada.")
 
     post_dict = post.model_dump()
@@ -24,28 +26,45 @@ async def create_post(
     new_post = await db.comunicacao.insert_one(post_dict)
     return {"id": str(new_post.inserted_id), "status": "Rascunho"}
 
-@router.put("/posts/{post_id}/status")
+@router.put("/posts/{post_titulo}/status")
 async def update_post_status(
-    post_id: str,
+    post_titulo: str,
     status: str = Body(..., embed=True),
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
 ):
-    if current_user.cargo != CargoEnum.Coordenador:
-        raise HTTPException(status_code=403, detail="Apenas Coordenadores podem alterar o status de postagens.")
+    if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
+        raise HTTPException(
+            status_code=403, 
+            detail="Apenas Coordenadores ou o Presidente podem alterar o status de postagens."
+        )
 
-    if not ObjectId.is_valid(post_id):
-        raise HTTPException(status_code=400, detail="ID de postagem inválido.")
+    # Busca a postagem pelo título (case-insensitive)
+    post = await db.comunicacao.find_one({"titulo": {"$regex": f"^{post_titulo}$", "$options": "i"}})
+    
+    if not post:
+        raise HTTPException(status_code=404, detail="Postagem não encontrada.")
 
+    # Atualiza o status da postagem
     result = await db.comunicacao.update_one(
-        {"_id": ObjectId(post_id)},
-        {"$set": {"status": status}}
+        {"_id": post["_id"]},
+        {
+            "$set": {
+                "status": status,
+                "atualizado_em": datetime.now(timezone.utc),
+                "atualizado_por": {
+                    "id": str(current_user.id),
+                    "nome": current_user.nome,
+                    "cargo": current_user.cargo.value
+                }
+            }
+        }
     )
 
     if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Postagem não encontrada.")
+        raise HTTPException(status_code=404, detail="Falha ao atualizar a postagem.")
 
-    return {"message": f"Status da postagem atualizado para '{status}'."}
+    return {"message": f"Status da postagem '{post_titulo}' atualizado para '{status}'."}
 
 @router.post("/requests", status_code= 201)
 async def create_communication_request(
@@ -57,7 +76,7 @@ async def create_communication_request(
     solicitacao_dict.update({
         "solicitante_id": current_user.id,
         "solicitante_nome": current_user.nome,
-        "data_solicitacao": datetime.utcnow(),
+        "data_solicitacao": datetime.now(timezone.utc),
         "status": "Pendente"
     })
 
