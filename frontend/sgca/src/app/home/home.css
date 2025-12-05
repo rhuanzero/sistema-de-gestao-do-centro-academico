@@ -1,0 +1,241 @@
+/* Reset básico e Fontes */
+:host {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: block;
+  background-color: #f9fafb; /* Cinza bem claro de fundo */
+  min-height: 100vh;
+  color: #333;
+}
+
+/* --- CABEÇALHO --- */
+.main-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 15px 0;
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex; /* Alinha logo na esquerda e data na direita */
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logo-box {
+  border: 2px solid #333;
+  padding: 5px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.org-info h1 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.org-info p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.system-info {
+  text-align: right;
+}
+
+.sys-name {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.sys-date {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+/* --- NAVEGAÇÃO --- */
+.main-nav {
+  background-color: #3b5bdb; /* Azul royal parecido com a imagem */
+  color: white;
+  padding: 0 20px;
+}
+
+.main-nav ul {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 30px;
+}
+
+.main-nav a {
+  display: block;
+  padding: 15px 0;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+}
+
+.main-nav a:hover, .main-nav a.active {
+  color: #fff;
+  border-bottom: 2px solid #fff; /* A linha branca embaixo do ativo */
+}
+
+/* --- ÁREA DE CONTEÚDO --- */
+.content-area {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.section-title {
+  margin-bottom: 25px;
+}
+
+.section-title h2 {
+  font-size: 1.25rem;
+  margin-bottom: 5px;
+}
+
+.section-title p {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* --- GRID DE ESTATÍSTICAS (Topo) --- */
+.stats-grid {
+  display: grid;
+  /* Cria 6 colunas de tamanho igual */
+  grid-template-columns: repeat(6, 1fr);
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.stat-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 20px;
+  text-align: center;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.stat-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+/* --- GRID DE MÓDULOS (Meio) --- */
+.modules-grid {
+  display: grid;
+  /* Cria 3 colunas iguais */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  margin-bottom: 30px;
+}
+
+.module-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 25px;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 160px; /* Altura mínima para ficarem iguais */
+}
+
+.module-card h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #4b5563;
+}
+
+.module-card p {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.small-note {
+  font-size: 0.75rem;
+  color: #d1d5db;
+  font-style: italic;
+}
+
+/* Botão Preto */
+.btn-acessar {
+  background-color: #111827; /* Preto suave */
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  cursor: pointer;
+  width: fit-content;
+  transition: background 0.2s;
+}
+
+.btn-acessar:hover {
+  background-color: #374151;
+}
+
+/* --- RODAPÉ DE ATIVIDADE --- */
+.activity-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 25px;
+  border-radius: 4px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-section h3 {
+  margin-top: 0;
+  font-size: 1rem;
+  color: #4b5563;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+/* Responsividade Básica (para celular) */
+@media (max-width: 768px) {
+  .stats-grid, .modules-grid {
+    grid-template-columns: 1fr; /* Vira 1 coluna no celular */
+  }
+  .main-nav ul {
+    overflow-x: auto; /* Scroll horizontal no menu */
+  }
+}
