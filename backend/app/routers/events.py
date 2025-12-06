@@ -37,6 +37,56 @@ async def create_event(
     new_event = await db.eventos.insert_one(evento_dict)
     return {"id": str(new_event.inserted_id), "message": "Evento criado com sucesso"}
 
+
+@router.put("/{evento_titulo}")
+async def update_event(
+    evento_titulo: str,
+    update_data: dict,
+    current_user: Usuario = Depends(get_current_user),
+    db = Depends(get_mongo_db)
+):
+    # Permissão: Coordenador ou Presidente
+    if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
+        raise HTTPException(status_code=403, detail="Permissão insuficiente para atualizar evento.")
+
+    evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    # Sanitiza campos e aplica atualização
+    update_dict = {k: v for k, v in update_data.items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar.")
+
+    result = await db.eventos.update_one({"_id": evento["_id"]}, {"$set": update_dict})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Falha ao atualizar evento")
+
+    updated = await db.eventos.find_one({"_id": evento["_id"]})
+    updated["id"] = str(updated["_id"])
+    del updated["_id"]
+    return updated
+
+
+@router.delete("/{evento_titulo}", status_code=204)
+async def delete_event(
+    evento_titulo: str,
+    current_user: Usuario = Depends(get_current_user),
+    db = Depends(get_mongo_db)
+):
+    # Apenas Presidente pode deletar eventos
+    if current_user.cargo != CargoEnum.Presidente:
+        raise HTTPException(status_code=403, detail="Apenas o Presidente pode deletar eventos.")
+
+    evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    result = await db.eventos.delete_one({"_id": evento["_id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=400, detail="Falha ao deletar evento")
+    return
+
 @router.get("/")
 async def list_events(
     db = Depends(get_mongo_db),

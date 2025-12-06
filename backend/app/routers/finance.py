@@ -6,7 +6,7 @@ from app.models.sql_models import (
     Transacao, Usuario, CargoEnum, TipoTransacao, 
     CentroAcademico
 )
-from app.models.schemas import TransacaoCreate, TransacaoResponse
+from app.models.schemas import TransacaoCreate, TransacaoResponse, TransacaoUpdate
 from app.security import get_current_user
 from datetime import datetime, timedelta, date as date_type
 from typing import Union
@@ -220,4 +220,75 @@ async def generate_report(
         "total_registros": len(dados_formatados),
         "gerado_em": datetime.now().isoformat()
     }
+
+
+@router.put("/transactions/{transaction_id}", response_model=TransacaoResponse)
+async def update_transaction(
+    transaction_id: int,
+    transacao_update: TransacaoUpdate,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Apenas Tesoureiro ou Presidente podem alterar transações
+    if current_user.cargo not in {CargoEnum.Tesoureiro, CargoEnum.Presidente}:
+        raise HTTPException(status_code=403, detail="Acesso restrito à Tesouraria ou Presidência.")
+
+    result = await db.execute(select(Transacao).where(Transacao.id == transaction_id))
+    tx = result.scalars().first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transação não encontrada.")
+
+    # Calcular reversão do efeito anterior no saldo
+    try:
+        # Reverte o efeito da transação antiga
+        reverse_type = TipoTransacao.Despesa if tx.tipo == TipoTransacao.Receita else TipoTransacao.Receita
+        await atualizar_saldo_ca(db=db, centro_academico_id=tx.centro_academico_id, valor=tx.valor, tipo=reverse_type)
+
+        # Aplica nova transação (se fields presentes)
+        update_data = transacao_update.model_dump(exclude_unset=True)
+        # Atualiza campos no objeto SQLAlchemy
+        for key, value in update_data.items():
+            if key == "valor":
+                setattr(tx, key, Decimal(str(value)))
+            else:
+                setattr(tx, key, value)
+
+        await db.commit()
+        await db.refresh(tx)
+
+        # Aplica efeito da transação atualizada
+        await atualizar_saldo_ca(db=db, centro_academico_id=tx.centro_academico_id, valor=tx.valor, tipo=tx.tipo)
+
+        return tx
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Falha ao atualizar transação: {str(e)}")
+
+
+@router.delete("/transactions/{transaction_id}", status_code=204)
+async def delete_transaction(
+    transaction_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Apenas Tesoureiro ou Presidente podem deletar
+    if current_user.cargo not in {CargoEnum.Tesoureiro, CargoEnum.Presidente}:
+        raise HTTPException(status_code=403, detail="Acesso restrito à Tesouraria ou Presidência.")
+
+    result = await db.execute(select(Transacao).where(Transacao.id == transaction_id))
+    tx = result.scalars().first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transação não encontrada.")
+
+    try:
+        # Reverte efeito no saldo
+        reverse_type = TipoTransacao.Despesa if tx.tipo == TipoTransacao.Receita else TipoTransacao.Receita
+        await atualizar_saldo_ca(db=db, centro_academico_id=tx.centro_academico_id, valor=tx.valor, tipo=reverse_type)
+
+        await db.delete(tx)
+        await db.commit()
+        return
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Falha ao remover transação: {str(e)}")
     

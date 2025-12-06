@@ -26,6 +26,53 @@ async def create_post(
     new_post = await db.comunicacao.insert_one(post_dict)
     return {"id": str(new_post.inserted_id), "status": "Rascunho"}
 
+
+@router.put("/posts/{post_titulo}")
+async def update_post(
+    post_titulo: str,
+    update_data: dict,
+    current_user: Usuario = Depends(get_current_user),
+    db = Depends(get_mongo_db)
+):
+    if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
+         raise HTTPException(status_code=403, detail="Permissão negada.")
+
+    post = await db.comunicacao.find_one({"titulo": {"$regex": f"^{post_titulo}$", "$options": "i"}})
+    if not post:
+        raise HTTPException(status_code=404, detail="Postagem não encontrada.")
+
+    update_dict = {k: v for k, v in update_data.items() if v is not None}
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="Nenhum campo para atualizar.")
+
+    result = await db.comunicacao.update_one({"_id": post["_id"]}, {"$set": update_dict})
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Falha ao atualizar a postagem.")
+
+    updated = await db.comunicacao.find_one({"_id": post["_id"]})
+    updated["id"] = str(updated["_id"])
+    del updated["_id"]
+    return updated
+
+
+@router.delete("/posts/{post_titulo}", status_code=204)
+async def delete_post(
+    post_titulo: str,
+    current_user: Usuario = Depends(get_current_user),
+    db = Depends(get_mongo_db)
+):
+    if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
+         raise HTTPException(status_code=403, detail="Permissão negada.")
+
+    post = await db.comunicacao.find_one({"titulo": {"$regex": f"^{post_titulo}$", "$options": "i"}})
+    if not post:
+        raise HTTPException(status_code=404, detail="Postagem não encontrada.")
+
+    result = await db.comunicacao.delete_one({"_id": post["_id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=400, detail="Falha ao deletar a postagem.")
+    return
+
 @router.put("/posts/{post_titulo}/status")
 async def update_post_status(
     post_titulo: str,
