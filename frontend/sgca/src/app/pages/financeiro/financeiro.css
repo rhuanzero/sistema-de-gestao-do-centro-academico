@@ -1,0 +1,20 @@
+:host { display: block; padding: 30px 20px; }
+
+.financial-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+
+.card { background: white; padding: 20px; border: 1px solid #e5e7eb; border-radius: 4px; }
+.money-card span { color: #666; font-size: 0.85rem; }
+.money-card h3 { font-size: 1.8rem; margin: 10px 0 0; }
+
+.text-blue { color: #3b5bdb; }
+.text-green { color: #16a34a; }
+.text-red { color: #dc2626; }
+
+.transactions-section h3 { font-size: 1.1rem; color: #333; margin-bottom: 15px; }
+.transaction-list { background: white; border: 1px solid #e5e7eb; border-radius: 4px; }
+.transaction-item { display: flex; justify-content: space-between; padding: 15px; border-bottom: 1px solid #f3f4f6; }
+.t-info { display: flex; flex-direction: column; }
+.t-info small { color: #9ca3af; font-size: 0.8rem; }
+.t-value { font-weight: bold; }
+.t-value.positive { color: #16a34a; }
+.t-value.negative { color: #dc2626; }

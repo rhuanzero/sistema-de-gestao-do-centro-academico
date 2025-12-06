@@ -1,11 +1,22 @@
 import { Routes } from '@angular/router';
-import { Home } from './home/home'; // ⚠️ Verifique se o caminho do arquivo está correto aqui!
+import { Home } from './pages/home/home'; // Verifique se o nome da classe é Home ou HomeComponent
+import { Membros } from './pages/membros/membros';
+import { Financeiro } from './pages/financeiro/financeiro';
+import { Eventos } from './pages/eventos/eventos';
+// Importe os outros se já tiver criado
+// import { ComunicacaoComponent } from './pages/comunicacao/comunicacao.component';
+// import { PatrimonioComponent } from './pages/patrimonio/patrimonio.component';
 
 export const routes: Routes = [
-  {
-    path: '',       // Caminho vazio = Raiz do site (http://localhost:4200/)
-    component: Home // Carrega o seu componente Home
-  },
-  // Aqui você pode adicionar outras rotas depois, ex:
-  // { path: 'financeiro', component: FinanceiroComponent },
+  // Rota padrão: redireciona para o dashboard ao abrir o site
+  { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+  
+  { path: 'dashboard', component: Home },
+  { path: 'membros', component: Membros },
+  { path: 'financeiro', component: Financeiro },
+  { path: 'eventos', component: Eventos },
+  
+  // Exemplo para futuras rotas (descomente quando criar os componentes)
+  // { path: 'comunicacao', component: ComunicacaoComponent },
+  // { path: 'patrimonio', component: PatrimonioComponent },
 ];

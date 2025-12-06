@@ -1,0 +1,29 @@
+<div class="financial-summary">
+  <div class="card money-card">
+    <span>Saldo Atual</span>
+    <h3 class="text-blue">R$ 12.450,00</h3>
+  </div>
+  <div class="card money-card">
+    <span>Receitas (Mês)</span>
+    <h3 class="text-green">R$ 3.200,00</h3>
+  </div>
+  <div class="card money-card">
+    <span>Despesas (Mês)</span>
+    <h3 class="text-red">R$ 850,00</h3>
+  </div>
+</div>
+
+<div class="transactions-section">
+  <h3>Últimas Transações</h3>
+  <div class="transaction-list">
+    <div class="transaction-item" *ngFor="let t of transactions">
+      <div class="t-info">
+        <strong>{{ t.desc }}</strong>
+        <small>{{ t.date }}</small>
+      </div>
+      <span class="t-value" [class.positive]="t.type === 'in'" [class.negative]="t.type === 'out'">
+        {{ t.type === 'in' ? '+' : '-' }} R$ {{ t.value }}
+      </span>
+    </div>
+  </div>
+</div>

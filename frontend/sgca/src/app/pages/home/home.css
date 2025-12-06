@@ -1,0 +1,23 @@
+/* --- CONTEÚDO ESPECÍFICO DA HOME --- */
+.section-title { margin-bottom: 25px; }
+.section-title h2 { font-size: 1.25rem; margin-bottom: 5px; }
+.section-title p { color: #666; font-size: 0.9rem; }
+
+/* Grids e Cards */
+.stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 15px; margin-bottom: 30px; }
+.stat-card { background: #fff; border: 1px solid #e5e7eb; padding: 20px; text-align: center; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.stat-number { display: block; font-size: 1.5rem; font-weight: bold; color: #1f2937; }
+.stat-label { font-size: 0.7rem; text-transform: uppercase; color: #9ca3af; font-weight: bold; letter-spacing: 1px; }
+
+.modules-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 30px; }
+.module-card { background: #fff; border: 1px solid #e5e7eb; padding: 25px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; min-height: 160px; }
+.module-card h3 { margin-top: 0; font-size: 1rem; color: #4b5563; }
+.module-card p { font-size: 0.85rem; color: #9ca3af; }
+
+.btn-acessar { background-color: #111827; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; cursor: pointer; width: fit-content; transition: background 0.2s; }
+.btn-acessar:hover { background-color: #374151; }
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .stats-grid, .modules-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,21 @@
+<div class="section-title">
+  <h2>Dashboard Executivo</h2>
+  <p>Visão geral das operações do Centro Acadêmico</p>
+</div>
+
+<section class="stats-grid">
+  <div class="stat-card" *ngFor="let item of ['Membros', 'Transações', 'Eventos', 'Comunicação', 'Patrimônio', 'Total']">
+    <span class="stat-number">0</span>
+    <span class="stat-label">{{ item }}</span>
+  </div>
+</section>
+
+<section class="modules-grid">
+  <div class="module-card">
+    <div class="card-content">
+      <h3>Gestão de Acesso e Membros</h3>
+      <p>Controle de permissões e hierarquia funcional</p>
+    </div>
+    <button class="btn-acessar">Acessar módulo</button>
+  </div>
+  </section>

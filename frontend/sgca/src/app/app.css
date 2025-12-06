@@ -1,0 +1,35 @@
+/* --- RESET E GLOBAIS --- */
+:host {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;       /* Mudança importante para o layout ocupar tudo */
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f9fafb;
+  color: #333;
+}
+
+/* --- CABEÇALHO (Copie tudo que começa com .main-header, .header-content...) --- */
+.main-header { background-color: #fff; border-bottom: 1px solid #e5e7eb; padding: 15px 0; }
+.header-content { max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+.logo-section { display: flex; align-items: center; gap: 15px; }
+.logo-box { border: 2px solid #333; padding: 5px; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; }
+.org-info h1 { margin: 0; font-size: 0.95rem; font-weight: 600; }
+.org-info p { margin: 0; font-size: 0.75rem; color: #666; }
+.system-info { text-align: right; }
+.sys-name { display: block; font-size: 0.75rem; color: #666; }
+.sys-date { font-weight: bold; font-size: 0.9rem; }
+
+/* --- NAVEGAÇÃO (Copie tudo que começa com .main-nav...) --- */
+.main-nav { background-color: #3b5bdb; color: white; padding: 0 20px; }
+.main-nav ul { max-width: 1200px; margin: 0 auto; padding: 0; list-style: none; display: flex; gap: 30px; }
+.main-nav a { display: block; padding: 15px 0; text-decoration: none; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; cursor: pointer;}
+.main-nav a:hover, .main-nav a.active { color: #fff; border-bottom: 2px solid #fff; }
+
+/* --- ÁREA DE CONTEÚDO GLOBAL --- */
+.content-area {
+  width: 100%;
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 20px;
+  flex: 1; /* Faz o conteúdo empurrar o rodapé se tiver */
+}

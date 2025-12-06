@@ -1,0 +1,34 @@
+<div class="page-header">
+  <h2>Gestão de Membros</h2>
+  <button class="btn-primary">+ Novo Membro</button>
+</div>
+
+<div class="card-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Cargo</th>
+        <th>Curso</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let member of members">
+        <td>{{ member.name }}</td>
+        <td>{{ member.role }}</td>
+        <td>{{ member.course }}</td>
+        <td>
+          <span class="badge" [class.active]="member.active" [class.inactive]="!member.active">
+            {{ member.active ? 'Ativo' : 'Inativo' }}
+          </span>
+        </td>
+        <td class="actions">
+          <button class="btn-icon">✏️</button>
+          <button class="btn-icon">🗑️</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

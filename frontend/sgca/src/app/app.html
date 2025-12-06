@@ -1,1 +1,34 @@
-<router-outlet></router-outlet>
+<div class="dashboard-container">
+
+  <header class="main-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <div class="logo-box">[LOGO]</div>
+        <div class="org-info">
+          <h1>Centro Acadêmico de Sistemas de Informação</h1>
+          <p>Universidade Federal • Gestão 2024</p>
+        </div>
+      </div>
+      <div class="system-info">
+        <span class="sys-name">SGCA</span>
+        <span class="sys-date">18/10/2025</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-nav">
+    <ul>
+      <li><a routerLink="/dashboard" routerLinkActive="active">Dashboard</a></li>
+      <li><a routerLink="/membros" routerLinkActive="active">Acesso e Membros</a></li>
+      <li><a routerLink="/financeiro" routerLinkActive="active">Financeiro</a></li>
+      <li><a routerLink="/eventos" routerLinkActive="active">Eventos e Comercial</a></li>
+      <li><a routerLink="/comunicacao" routerLinkActive="active">Comunicação</a></li>
+      <li><a routerLink="/patrimonio" routerLinkActive="active">Patrimônio</a></li>
+    </ul>
+  </nav>
+
+  <main class="content-area">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

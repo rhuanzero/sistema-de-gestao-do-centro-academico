@@ -1,0 +1,23 @@
+:host { display: block; padding: 30px 20px; }
+.events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+.event-card {
+  background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px;
+  display: flex; gap: 15px; align-items: start; position: relative;
+}
+
+.event-date {
+  background: #f3f4f6; padding: 10px; border-radius: 4px; text-align: center; min-width: 50px;
+}
+.event-date span { display: block; font-size: 1.2rem; font-weight: bold; color: #333; }
+.event-date small { text-transform: uppercase; font-size: 0.7rem; color: #666; }
+
+.event-details h3 { margin: 0 0 5px; font-size: 1rem; }
+.event-details p { margin: 0 0 10px; font-size: 0.85rem; color: #666; }
+.status-tag { background: #e0e7ff; color: #3b5bdb; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
+
+.btn-manage {
+  position: absolute; right: 20px; top: 20px; background: transparent; border: 1px solid #e5e7eb;
+  padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+}
+.btn-manage:hover { background: #f9fafb; }
