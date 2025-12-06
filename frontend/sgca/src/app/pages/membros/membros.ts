@@ -1,5 +1,7 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core'; // <--- 1. Importe Inject e PLATFORM_ID
+import { CommonModule, isPlatformBrowser } from '@angular/common'; // <--- 2. Importe isPlatformBrowser
+import { ApiService } from '../../services/apiservice';
+import { Usuario } from '../../models/api';
 
 @Component({
   selector: 'app-membros',
@@ -8,10 +10,27 @@ import { CommonModule } from '@angular/common';
   templateUrl: './membros.html',
   styleUrl: './membros.css'
 })
-export class Membros {
-  members = [
-    { name: 'Thauan', role: 'Presidente', course: 'Sistemas de Info.', active: true },
-    { name: 'Maria Silva', role: 'Tesoureira', course: 'Eng. Software', active: true },
-    { name: 'João Souza', role: 'Membro', course: 'Ciência Comp.', active: false },
-  ];
+export class Membros implements OnInit {
+  members: Usuario[] = [];
+
+  constructor(
+    private api: ApiService,
+    @Inject(PLATFORM_ID) private platformId: Object // <--- 3. Injete o identificador da plataforma
+  ) {}
+
+  ngOnInit() {
+    // 4. BLOQUEIO: Se não for navegador (for servidor), NÃO FAZ NADA.
+    if (isPlatformBrowser(this.platformId)) {
+      
+      // Aqui dentro é seguro, estamos no Chrome/Firefox/etc
+      this.api.getMembers().subscribe({
+        next: (data) => {
+          this.members = data;
+          console.log('Membros carregados:', data);
+        },
+        error: (err) => console.error('Erro ao carregar membros:', err)
+      });
+
+    }
+  }
 }

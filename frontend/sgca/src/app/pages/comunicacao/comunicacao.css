@@ -1,0 +1,41 @@
+:host { display: block; padding: 30px 20px; }
+
+/* Header e Botões */
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+.header-actions { display: flex; gap: 10px; }
+
+.btn-primary { background: #3b5bdb; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+.btn-secondary { background: white; color: #333; border: 1px solid #ccc; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+
+.section-subtitle { margin: 25px 0 15px; font-size: 1.1rem; color: #4b5563; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+
+/* Grid de Social Media */
+.social-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+
+.post-card { background: white; border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px; border-left: 4px solid #ddd; }
+.post-card:hover { transform: translateY(-2px); transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+.post-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.platform-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; color: white; background: #666; }
+.platform-tag.insta { background: #E1306C; }
+.platform-tag.linkedin { background: #0077b5; }
+
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
+.status-dot.scheduled { background: #f59e0b; } /* Laranja */
+.status-dot.published { background: #10b981; } /* Verde */
+
+.post-content h4 { margin: 0 0 5px; font-size: 0.95rem; }
+.post-content p { margin: 0; font-size: 0.8rem; color: #666; }
+
+.post-footer { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #666; }
+.btn-icon { background: none; border: none; cursor: pointer; }
+
+/* Lista de Documentos */
+.docs-list { background: white; border: 1px solid #e5e7eb; border-radius: 4px; }
+.doc-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f3f4f6; gap: 15px; }
+.doc-item:last-child { border-bottom: none; }
+.doc-icon { font-size: 1.5rem; }
+.doc-info { flex: 1; display: flex; flex-direction: column; }
+.doc-info small { color: #9ca3af; }
+.btn-download { background: #f3f4f6; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+.btn-download:hover { background: #e5e7eb; }

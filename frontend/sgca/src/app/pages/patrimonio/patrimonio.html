@@ -1,0 +1,53 @@
+<div class="page-header">
+  <h2>Controle de Patrimônio</h2>
+  <button class="btn-primary">+ Registrar Item</button>
+</div>
+
+<div class="summary-cards">
+  <div class="mini-card">
+    <span class="label">Total de Itens</span>
+    <span class="value">45</span>
+  </div>
+  <div class="mini-card">
+    <span class="label">Valor Total Estimado</span>
+    <span class="value">R$ 15.400</span>
+  </div>
+  <div class="mini-card alert">
+    <span class="label">Itens Danificados</span>
+    <span class="value text-red">2</span>
+  </div>
+</div>
+
+<div class="card-table">
+  <table>
+    <thead>
+      <tr>
+        <th>ID (Tombo)</th>
+        <th>Item</th>
+        <th>Localização</th>
+        <th>Valor Est.</th>
+        <th>Estado</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of assets">
+        <td class="code">#{{ item.id }}</td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.location }}</td>
+        <td>R$ {{ item.value }}</td>
+        <td>
+          <span class="badge" 
+            [class.good]="item.condition === 'Bom'" 
+            [class.bad]="item.condition === 'Danificado'"
+            [class.new]="item.condition === 'Novo'">
+            {{ item.condition }}
+          </span>
+        </td>
+        <td class="actions">
+          <button class="btn-icon">✏️</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

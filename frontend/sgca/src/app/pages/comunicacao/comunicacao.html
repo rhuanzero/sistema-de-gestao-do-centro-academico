@@ -1,0 +1,39 @@
+<div class="page-header">
+  <h2>Comunicação e Marketing</h2>
+  <div class="header-actions">
+    <button class="btn-secondary">📄 Nova Ata/Ofício</button>
+    <button class="btn-primary">📱 Novo Post</button>
+  </div>
+</div>
+
+<h3 class="section-subtitle">Planejamento de Mídia</h3>
+<div class="social-grid">
+  <div class="post-card" *ngFor="let post of posts">
+    <div class="post-header">
+      <span class="platform-tag" [class.insta]="post.platform === 'Instagram'" [class.linkedin]="post.platform === 'LinkedIn'">
+        {{ post.platform }}
+      </span>
+      <span class="status-dot" [class.scheduled]="post.status === 'Agendado'" [class.published]="post.status === 'Publicado'"></span>
+    </div>
+    <div class="post-content">
+      <h4>{{ post.title }}</h4>
+      <p>{{ post.date }}</p>
+    </div>
+    <div class="post-footer">
+      <span class="status-text">{{ post.status }}</span>
+      <button class="btn-icon">✏️</button>
+    </div>
+  </div>
+</div>
+
+<h3 class="section-subtitle">Documentos Oficiais</h3>
+<div class="docs-list">
+  <div class="doc-item" *ngFor="let doc of docs">
+    <div class="doc-icon">📄</div>
+    <div class="doc-info">
+      <strong>{{ doc.title }}</strong>
+      <small>Enviado em: {{ doc.date }} • Por: {{ doc.author }}</small>
+    </div>
+    <button class="btn-download">Baixar</button>
+  </div>
+</div>

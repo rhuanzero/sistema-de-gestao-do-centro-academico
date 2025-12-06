@@ -4,31 +4,29 @@
 </div>
 
 <div class="card-table">
-  <table>
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>Cargo</th>
-        <th>Curso</th>
-        <th>Status</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let member of members">
-        <td>{{ member.name }}</td>
-        <td>{{ member.role }}</td>
-        <td>{{ member.course }}</td>
-        <td>
-          <span class="badge" [class.active]="member.active" [class.inactive]="!member.active">
-            {{ member.active ? 'Ativo' : 'Inativo' }}
-          </span>
-        </td>
-        <td class="actions">
-          <button class="btn-icon">✏️</button>
-          <button class="btn-icon">🗑️</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+<table>
+  <thead>
+    <tr>
+      <th>Nome</th>
+      <th>Cargo</th>
+      <th>Email</th> <th>Status</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let member of members">
+      <td>{{ member.nome }}</td>       <td>{{ member.cargo }}</td>      <td>{{ member.email }}</td>      <td>
+        <span class="badge" 
+          [class.active]="member.status === 'Ativo'" 
+          [class.inactive]="member.status !== 'Ativo'">
+          {{ member.status }}
+        </span>
+      </td>
+      <td class="actions">
+        <button class="btn-icon">✏️</button>
+        <button class="btn-icon">🗑️</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
 </div>
