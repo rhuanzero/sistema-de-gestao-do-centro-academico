@@ -13,20 +13,24 @@
       <th>Ações</th>
     </tr>
   </thead>
-  <tbody>
-    <tr *ngFor="let member of members">
-      <td>{{ member.nome }}</td>       <td>{{ member.cargo }}</td>      <td>{{ member.email }}</td>      <td>
-        <span class="badge" 
-          [class.active]="member.status === 'Ativo'" 
-          [class.inactive]="member.status !== 'Ativo'">
-          {{ member.status }}
-        </span>
-      </td>
-      <td class="actions">
-        <button class="btn-icon">✏️</button>
-        <button class="btn-icon">🗑️</button>
-      </td>
-    </tr>
-  </tbody>
+ <tbody>
+  <tr *ngFor="let membro of membros">
+    
+    <td>{{ membro.nome }}</td>
+
+    <td>Membro</td>
+
+    <td>{{ membro.email }}</td>
+
+    <td>
+      <span style="color: green; font-weight: bold;">Ativo</span>
+    </td>
+
+    <td>
+      <button>✏️</button>
+      <button>🗑️</button>
+    </td>
+  </tr>
+</tbody>
 </table>
 </div>

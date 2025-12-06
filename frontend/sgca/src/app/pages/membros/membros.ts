@@ -11,7 +11,7 @@ import { Usuario } from '../../models/api';
   styleUrl: './membros.css'
 })
 export class Membros implements OnInit {
-  members: Usuario[] = [];
+  membros: Usuario[] = [];
 
   constructor(
     private api: ApiService,
@@ -25,7 +25,7 @@ export class Membros implements OnInit {
       // Aqui dentro é seguro, estamos no Chrome/Firefox/etc
       this.api.getMembers().subscribe({
         next: (data) => {
-          this.members = data;
+          this.membros = data;
           console.log('Membros carregados:', data);
         },
         error: (err) => console.error('Erro ao carregar membros:', err)
