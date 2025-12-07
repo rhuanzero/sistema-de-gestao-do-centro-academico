@@ -6,6 +6,7 @@ from app.models.schemas import (
     PostagemUpdate,
     PostagemResponse,
     SolicitacaoComunicacaoCreate,
+    SolicitacaoComunicacaoResponse,
     CreatedWithStatus,
     CreatedResponse,
     SimpleMessageResponse,
@@ -141,6 +142,43 @@ async def create_communication_request(
 
     result = await db.solicitacoes_comunicacao.insert_one(solicitacao_dict)
     return {"id": str(result.inserted_id), "message": "Solicitação de comunicação enviada com sucesso."}
+
+
+@router.get("/requests", response_model=list[SolicitacaoComunicacaoResponse])
+async def list_communication_requests(
+    status: Optional[str] = None,
+    db = Depends(get_mongo_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    # Apenas Coordenadores e Presidente podem listar solicitações
+    if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
+        raise HTTPException(status_code=403, detail="Permissão negada.")
+
+    query = {}
+    if status:
+        query["status"] = status
+
+    docs = await db.solicitacoes_comunicacao.find(query).sort("data_solicitacao", -1).to_list(length=1000)
+
+    results = []
+    for d in docs:
+        d["id"] = str(d["_id"])
+        # garante que prazo_sugerido e data_solicitacao são datetimes
+        if isinstance(d.get("prazo_sugerido"), date) and not isinstance(d.get("prazo_sugerido"), datetime):
+            d["prazo_sugerido"] = datetime.combine(d["prazo_sugerido"], datetime.min.time())
+        results.append({
+            "id": d["id"],
+            "titulo": d.get("titulo"),
+            "descricao": d.get("descricao"),
+            "prazo_sugerido": d.get("prazo_sugerido"),
+            "publico_alvo": d.get("publico_alvo"),
+            "solicitante_id": d.get("solicitante_id"),
+            "solicitante_nome": d.get("solicitante_nome"),
+            "data_solicitacao": d.get("data_solicitacao"),
+            "status": d.get("status"),
+        })
+
+    return results
 
 
     

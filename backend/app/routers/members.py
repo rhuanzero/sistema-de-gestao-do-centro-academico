@@ -26,7 +26,8 @@ async def create_member(
         cpf=member.cpf,
         telefone=member.telefone,
         cargo=member.cargo,
-        departamento_id=member.departamento_id
+        departamento_id=member.departamento_id,
+        centro_academico_id=current_user.centro_academico_id
     )
     db.add(new_user)
     try:

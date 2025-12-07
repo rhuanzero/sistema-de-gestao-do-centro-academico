@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
 from typing import Optional, List, Any, Dict
 from datetime import date, datetime
 from enum import Enum
@@ -53,7 +53,8 @@ class UsuarioBase(BaseModel):
     cargo: Cargo = Cargo.Membro
     status: str = "Ativo"
     departamento_id: Optional[int] = None
-    centro_academico_id: int
+    # `centro_academico_id` is intentionally omitted here for create payloads.
+    # The server will set it to the centro acadêmico of the authenticated user.
     
     @field_validator('cpf')
     def validate_cpf(cls, v):
@@ -91,6 +92,7 @@ class UsuarioUpdate(BaseModel):
 
 class UsuarioResponse(UsuarioBase):
     id: int
+    centro_academico_id: int
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -100,10 +102,10 @@ class TransacaoBase(BaseModel):
     valor: float = Field(..., gt=0)
     data: datetime
     tipo: str = Field(pattern="^(Receita|Despesa)$")
-    usuario_id: int 
-    centro_academico_id: int = 1
+
 
 class TransacaoCreate(TransacaoBase):
+    # Cliente não deve enviar `usuario_id` nem `centro_academico_id`.
     pass
 
 class TransacaoUpdate(BaseModel):
@@ -114,7 +116,9 @@ class TransacaoUpdate(BaseModel):
 
 class TransacaoResponse(TransacaoBase):
     id: int
-    
+    usuario_id: int
+    centro_academico_id: int
+
     model_config = ConfigDict(from_attributes=True)
 
 # --- Schemas MongoDB (Eventos/Posts) ---
@@ -139,7 +143,35 @@ class EventoCreate(BaseModel):
     data_fim: datetime
     orcamento_limite: Optional[float] = None
     responsaveis_ids: List[int]
-    status: str = "Em Planejamento"
+    status: str = "Rascunho"
+
+    @field_validator('data_inicio', mode='before')
+    def ensure_datetime_for_start(cls, v):
+        # Allow date or datetime-ish strings; pydantic will coerce
+        return v
+
+    @field_validator('data_fim', mode='before')
+    def ensure_datetime_for_end(cls, v):
+        return v
+
+    @classmethod
+    @model_validator(mode='after')
+    def validate_dates(cls, model):
+        # This runs after model parsing; `v` is the model instance
+        # Ensure data_inicio is not in the past and data_fim >= data_inicio
+        data_inicio = model.data_inicio
+        data_fim = model.data_fim
+
+        now = datetime.utcnow()
+        # normalize to date boundary for 'past' check
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        if data_inicio < today_start:
+            raise ValueError('A data de início não pode ser no passado.')
+
+        if data_fim < data_inicio:
+            raise ValueError('A data de fim deve ser igual ou posterior à data de início.')
+
+        return model
 
 class PostagemCreate(BaseModel):
     titulo: str
@@ -153,6 +185,18 @@ class SolicitacaoComunicacaoCreate(BaseModel):
     descricao: str
     prazo_sugerido: date
     publico_alvo: str
+
+
+class SolicitacaoComunicacaoResponse(BaseModel):
+    id: str
+    titulo: str
+    descricao: str
+    prazo_sugerido: datetime
+    publico_alvo: str
+    solicitante_id: int
+    solicitante_nome: str
+    data_solicitacao: datetime
+    status: str
     
 class Token(BaseModel):
     access_token: str
