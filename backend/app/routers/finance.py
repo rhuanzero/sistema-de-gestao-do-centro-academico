@@ -6,7 +6,7 @@ from app.models.sql_models import (
     Transacao, Usuario, CargoEnum, TipoTransacao, 
     CentroAcademico
 )
-from app.models.schemas import TransacaoCreate, TransacaoResponse, TransacaoUpdate
+from app.models.schemas import TransacaoCreate, TransacaoResponse, TransacaoUpdate, BalanceResponse, ReportResponse
 from app.security import get_current_user
 from datetime import datetime, timedelta, date as date_type
 from typing import Union
@@ -94,7 +94,7 @@ async def create_transaction(
             detail="Falha ao processar a transação financeira."
         )
 
-@router.get("/balance", response_model=dict)
+@router.get("/balance", response_model=BalanceResponse)
 async def get_balance(
     current_user: Usuario = Depends(get_current_user), 
     db: AsyncSession = Depends(get_db)
@@ -150,7 +150,7 @@ async def get_balance(
     }
 
 
-@router.get("/report", response_model=dict)
+@router.get("/report", response_model=ReportResponse)
 async def generate_report(
     start_date: Union[datetime, date_type] = date_type(1990, 1, 1), 
     end_date: Union[datetime, date_type] = date_type.today(),

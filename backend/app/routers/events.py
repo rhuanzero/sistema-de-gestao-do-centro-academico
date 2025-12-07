@@ -2,7 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_mongo_db, get_db
-from app.models.schemas import EventoCreate, Tarefa, Patrocinio
+from app.models.schemas import (
+    EventoCreate,
+    EventoUpdate,
+    EventoResponse,
+    Tarefa,
+    Patrocinio,
+    CreatedResponse,
+    TaskCreatedResponse,
+    SimpleMessageResponse,
+    MessageStatusResponse,
+)
 from app.security import get_current_user
 from app.models.sql_models import Usuario, CargoEnum, Departamento
 from bson import ObjectId
@@ -10,7 +20,7 @@ from datetime import datetime
 
 router = APIRouter(prefix="/events", tags=["Gestão de Eventos"])
 
-@router.post("/")
+@router.post("/", response_model=CreatedResponse)
 async def create_event(
     evento: EventoCreate,
     current_user: Usuario = Depends(get_current_user),
@@ -38,10 +48,10 @@ async def create_event(
     return {"id": str(new_event.inserted_id), "message": "Evento criado com sucesso"}
 
 
-@router.put("/{evento_titulo}")
+@router.put("/{evento_titulo}", response_model=EventoResponse)
 async def update_event(
     evento_titulo: str,
-    update_data: dict,
+    update_data: EventoUpdate,
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
 ):
@@ -87,7 +97,7 @@ async def delete_event(
         raise HTTPException(status_code=400, detail="Falha ao deletar evento")
     return
 
-@router.get("/")
+@router.get("/", response_model=list[EventoResponse])
 async def list_events(
     db = Depends(get_mongo_db),
     current_user: Usuario = Depends(get_current_user)
@@ -104,7 +114,7 @@ async def list_events(
         
     return results
 
-@router.get("/{evento_titulo}")
+@router.get("/{evento_titulo}", response_model=EventoResponse)
 async def get_event(
     evento_titulo: str,
     db = Depends(get_mongo_db),
@@ -122,7 +132,7 @@ async def get_event(
     
     return event
 
-@router.post("/{evento_titulo}/tasks")
+@router.post("/{evento_titulo}/tasks", response_model=TaskCreatedResponse)
 async def add_task_to_event(
     evento_titulo: str,
     tarefa: Tarefa,
@@ -178,7 +188,7 @@ async def add_task_to_event(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao processar a requisição: {str(e)}")
 
-@router.put("/{evento_titulo}/tasks/{task_id}/status")
+@router.put("/{evento_titulo}/tasks/{task_id}/status", response_model=MessageStatusResponse)
 async def update_task_status(
     evento_titulo: str,
     task_id: int,
@@ -234,7 +244,7 @@ async def update_task_status(
     return {"message": "Status atualizado com sucesso", "novo_status": status}
 
     
-@router.post("/{evento_titulo}/sponsors")
+@router.post("/{evento_titulo}/sponsors", response_model=SimpleMessageResponse)
 async def add_sponsor_to_event(
     evento_titulo: str,
     patrocinio: Patrocinio,

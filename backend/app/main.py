@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from app.database import engine, Base
+import os
 from app.routers import auth, members, finance, events, communication, patrimony
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -40,5 +41,6 @@ app.include_router(communication.router)
 app.include_router(patrimony.router)
 
 @app.get("/")
+@app.get("/", response_model=dict)
 def read_root():
     return {"message": "SGCA API Online. Acesse /docs para documentação."}

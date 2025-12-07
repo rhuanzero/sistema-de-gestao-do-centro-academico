@@ -87,7 +87,7 @@ async def register_user(
     Apenas administradores podem registrar novos usuários.
     """
     # Verifica se o usuário atual é um administrador
-    if current_user.cargo not in [CargoEnum.Presidente, CargoEnum.Tesoureiro]:
+    if current_user.cargo not in [CargoEnum.Presidente]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Apenas administradores podem registrar novos usuários"

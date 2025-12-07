@@ -186,3 +186,102 @@ class PatrimonioResponse(PatrimonioBase):
 
     class Config:
         from_attributes = True
+
+# --- Schemas de resposta e updates para Eventos/Postagens/Relatórios ---
+class EventoUpdate(BaseModel):
+    titulo: Optional[str] = None
+    descricao: Optional[str] = None
+    local: Optional[str] = None
+    data_inicio: Optional[datetime] = None
+    data_fim: Optional[datetime] = None
+    orcamento_limite: Optional[float] = None
+    responsaveis_ids: Optional[List[int]] = None
+    status: Optional[str] = None
+
+
+class EventoResponse(BaseModel):
+    id: str
+    titulo: str
+    descricao: str
+    local: str
+    data_inicio: datetime
+    data_fim: datetime
+    orcamento_limite: Optional[float] = None
+    responsaveis_ids: List[int]
+    status: str
+    tarefas: List[Tarefa] = []
+    patrocinios: List[Patrocinio] = []
+    criado_em: Optional[datetime] = None
+    criado_por: Optional[Dict[str, Any]] = None
+
+
+class PostagemUpdate(BaseModel):
+    titulo: Optional[str] = None
+    conteudo_texto: Optional[str] = None
+    midia_destino: Optional[str] = None
+    data_agendamento: Optional[datetime] = None
+    anexos: Optional[List[str]] = None
+    status: Optional[str] = None
+
+
+class PostagemResponse(BaseModel):
+    id: str
+    titulo: str
+    conteudo_texto: str
+    midia_destino: str
+    data_agendamento: datetime
+    anexos: List[str]
+    autor_id: int
+    status: str
+    criado_em: Optional[datetime] = None
+
+
+class BalanceResponse(BaseModel):
+    saldo_atual: float
+    receitas: float
+    despesas: float
+    ultima_atualizacao: str
+
+
+class ReportTransaction(BaseModel):
+    id: int
+    data: str
+    descricao: str
+    valor: float
+    tipo: str
+    responsavel: str
+
+
+class ReportResponse(BaseModel):
+    periodo: Dict[str, str]
+    total_receitas: float
+    total_despesas: float
+    saldo_periodo: float
+    transacoes: List[ReportTransaction]
+    total_registros: int
+    gerado_em: str
+
+
+# --- Schemas comuns de criação/mensagem ---
+class CreatedResponse(BaseModel):
+    id: str
+    message: str
+
+
+class CreatedWithStatus(BaseModel):
+    id: str
+    status: str
+
+
+class TaskCreatedResponse(BaseModel):
+    message: str
+    task_id: int
+
+
+class SimpleMessageResponse(BaseModel):
+    message: str
+
+
+class MessageStatusResponse(BaseModel):
+    message: str
+    novo_status: Optional[str] = None

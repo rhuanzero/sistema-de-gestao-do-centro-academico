@@ -1,7 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from bson import ObjectId
 from app.database import get_mongo_db
-from app.models.schemas import PostagemCreate, SolicitacaoComunicacaoCreate
+from app.models.schemas import (
+    PostagemCreate,
+    PostagemUpdate,
+    PostagemResponse,
+    SolicitacaoComunicacaoCreate,
+    CreatedWithStatus,
+    CreatedResponse,
+    SimpleMessageResponse,
+)
 from app.security import get_current_user
 from app.models.sql_models import Usuario, CargoEnum
 from typing import Optional
@@ -9,7 +17,7 @@ from datetime import datetime, timezone, date
 
 router = APIRouter(prefix="/communication", tags=["Comunicação e Burocrático"])
 
-@router.post("/create_posts")
+@router.post("/create_posts", response_model=CreatedWithStatus)
 async def create_post(
     post: PostagemCreate,
     current_user: Usuario = Depends(get_current_user),
@@ -27,10 +35,10 @@ async def create_post(
     return {"id": str(new_post.inserted_id), "status": "Rascunho"}
 
 
-@router.put("/posts/{post_titulo}")
+@router.put("/posts/{post_titulo}", response_model=PostagemResponse)
 async def update_post(
     post_titulo: str,
-    update_data: dict,
+    update_data: PostagemUpdate,
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
 ):
@@ -73,7 +81,7 @@ async def delete_post(
         raise HTTPException(status_code=400, detail="Falha ao deletar a postagem.")
     return
 
-@router.put("/posts/{post_titulo}/status")
+@router.put("/posts/{post_titulo}/status", response_model=SimpleMessageResponse)
 async def update_post_status(
     post_titulo: str,
     status: str = Body(..., embed=True),
@@ -113,7 +121,7 @@ async def update_post_status(
 
     return {"message": f"Status da postagem '{post_titulo}' atualizado para '{status}'."}
 
-@router.post("/requests", status_code= 201)
+@router.post("/requests", status_code=201, response_model=CreatedResponse)
 async def create_communication_request(
     solicitacao: SolicitacaoComunicacaoCreate,
     current_user: Usuario = Depends(get_current_user),
@@ -136,7 +144,7 @@ async def create_communication_request(
 
 
     
-@router.get("/posts")
+@router.get("/posts", response_model=list[PostagemResponse])
 async def list_posts(
     status: Optional[str] = None,
     db = Depends(get_mongo_db),
