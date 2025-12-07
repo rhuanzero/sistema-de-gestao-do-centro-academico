@@ -5,16 +5,16 @@ import { Financeiro } from './pages/financeiro/financeiro';
 import { Eventos } from './pages/eventos/eventos';
 // Importe os outros se já tiver criado
 import { Comunicacao } from './pages/comunicacao/comunicacao';
-import { Patrimonio } from './pages/patrimonio/patrimonio';
+import { PatrimonioComponent } from './pages/patrimonio/patrimonio';
 import { Login } from './pages/login/login';
 import { Layout } from './layout/layout';
 
 
 export const routes: Routes = [
-  // Rota padrão: redireciona para o dashboard ao abrir o site
-  { path: '', redirectTo: 'login', pathMatch: 'full' },
-
-  { path: 'login', component: Login },
+  {
+    path: 'login',
+    component: Login
+  },
   
   {
     path: '',
@@ -27,7 +27,7 @@ export const routes: Routes = [
   
   // Exemplo para futuras rotas (descomente quando criar os componentes)
       { path: 'comunicacao', component: Comunicacao },
-      { path: 'patrimonio', component: Patrimonio },
+      { path: 'patrimonio', component: PatrimonioComponent },
     ],
   },
 

@@ -114,16 +114,16 @@ export interface HistoricoItem {
 }
 
 export interface Patrimonio {
-  id: string;
+  id?: string; 
   nome: string;
-  descricao: string;
-  status: StatusPatrimonio;
-  data_aquisicao: string;
-  historico?: HistoricoItem[];
+  tombo?: string;
+  valor: number;
   
-  // Campos opcionais que vi no seu HTML mas não estavam explícitos no Schema base
-  // Adicionei como opcionais (?) para não quebrar a compilação
-  valor?: number; 
-  localizacao?: string; 
-  condition?: string; // 'Novo', 'Bom', 'Danificado'
+  // 👇 ADICIONE ESSA LINHA QUE ESTÁ FALTANDO
+  estado: 'Novo' | 'Bom' | 'Regular' | 'Danificado' | 'Baixado'; 
+  status?: string;
+
+  localizacao?: string;
+  descricao?: string; // Adicione esse também para evitar erro de form
+  data_aquisicao?: string | Date;
 }

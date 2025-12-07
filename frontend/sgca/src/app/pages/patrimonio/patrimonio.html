@@ -1,53 +1,121 @@
-<div class="page-header">
-  <h2>Controle de Patrimônio</h2>
-  <button class="btn-primary">+ Registrar Item</button>
-</div>
+<div class="patrimonio-container">
+  
+  <header class="page-header">
+    <div class="header-content">
+      <h2>📦 Gestão de Patrimônio</h2>
+      <span class="badge-total">Total: {{ itens.length }} itens</span>
+    </div>
+  </header>
 
-<div class="summary-cards">
-  <div class="mini-card">
-    <span class="label">Total de Itens</span>
-    <span class="value">45</span>
+  <div *ngIf="erro" class="alert alert-error">
+    <span>{{ erro }}</span>
+    <button (click)="erro = ''" class="btn-close">✖</button>
   </div>
-  <div class="mini-card">
-    <span class="label">Valor Total Estimado</span>
-    <span class="value">R$ 15.400</span>
-  </div>
-  <div class="mini-card alert">
-    <span class="label">Itens Danificados</span>
-    <span class="value text-red">2</span>
-  </div>
-</div>
 
-<div class="card-table">
-  <table>
-    <thead>
-      <tr>
-        <th>ID (Tombo)</th>
-        <th>Item</th>
-        <th>Localização</th>
-        <th>Valor Est.</th>
-        <th>Estado</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let item of assets">
-        <td class="code">#{{ item.id }}</td>
-        <td>{{ item.name }}</td>
-        <td>{{ item.location }}</td>
-        <td>R$ {{ item.value }}</td>
-        <td>
-          <span class="badge" 
-            [class.good]="item.condition === 'Bom'" 
-            [class.bad]="item.condition === 'Danificado'"
-            [class.new]="item.condition === 'Novo'">
-            {{ item.condition }}
-          </span>
-        </td>
-        <td class="actions">
-          <button class="btn-icon">✏️</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="content-grid">
+    
+    <section class="form-section">
+      <div class="card sticky-card">
+        <h3>{{ modoEdicao ? '✏️ Editar Item' : '➕ Novo Item' }}</h3>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          
+          <div class="form-group">
+            <label>Nome do Item</label>
+            <input formControlName="nome" type="text" placeholder="Ex: Projetor Epson X5">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Tombo/ID</label>
+              <input formControlName="tombo" type="text" placeholder="12345">
+            </div>
+            <div class="form-group half">
+              <label>Valor (R$)</label>
+              <input formControlName="valor" type="number" placeholder="0,00">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Estado de Conservação</label>
+            <select formControlName="estado">
+              <option value="Novo">✨ Novo</option>
+              <option value="Bom">✅ Bom</option>
+              <option value="Regular">⚠️ Regular</option>
+              <option value="Danificado">🛠️ Danificado</option>
+              <option value="Baixado">🗑️ Baixado (Descarte)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Localização Atual</label>
+            <input formControlName="localizacao" type="text" placeholder="Ex: Sala do CA">
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" [disabled]="form.invalid || loading" class="btn btn-primary">
+              {{ loading ? 'Salvando...' : (modoEdicao ? 'Atualizar' : 'Cadastrar') }}
+            </button>
+            
+            <button *ngIf="modoEdicao" type="button" (click)="cancelarEdicao()" class="btn btn-secondary">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="list-section">
+      <div class="card">
+        
+        <div *ngIf="loading && itens.length === 0" class="loading-state">
+          <div class="spinner"></div>
+          <p>Carregando patrimônio...</p>
+        </div>
+
+        <table class="data-table" *ngIf="!loading || itens.length > 0">
+          <thead>
+            <tr>
+              <th>Item / Local</th>
+              <th>Estado</th>
+              <th class="text-right">Valor</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of itens">
+              <td>
+                <div class="item-name">{{ item.nome }}</div>
+                <div class="item-meta">
+                  <span *ngIf="item.tombo">🏷️ {{ item.tombo }}</span>
+                  <span *ngIf="item.localizacao">📍 {{ item.localizacao }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" 
+                  [ngClass]="(item.estado || item.status || '').toLowerCase()">
+                  
+                  {{ item.estado || item.status }}
+                
+                </span>
+              </td>
+              <td class="text-right font-mono">
+                {{ (item.valor || 0) | currency:'BRL':'symbol':'1.2-2' }}
+              </td>
+              <td class="text-center">
+                <button (click)="editar(item)" class="btn-icon edit" title="Editar">✏️</button>
+                <button (click)="deletar(item.id!)" class="btn-icon delete" title="Excluir">🗑️</button>
+              </td>
+            </tr>
+
+            <tr *ngIf="itens.length === 0 && !loading">
+              <td colspan="4" class="empty-state">
+                Nenhum item cadastrado ainda.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
 </div>

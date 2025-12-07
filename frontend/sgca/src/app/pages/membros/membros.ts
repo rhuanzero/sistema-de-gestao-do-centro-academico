@@ -42,12 +42,12 @@ export class Membros implements OnInit {
   carregarMembros() {
     this.carregando = true;
     this.apiService.getMembers().subscribe({
-      next: (dados) => {
+      next: (dados: any[]) => {
         this.membros = dados;
         this.carregando = false;
         this.cd.detectChanges();
       },
-      error: (e) => console.error(e)
+      error: (e: any) => console.error(e)
     });
   }
 
@@ -105,7 +105,7 @@ abrirModalCriacao() {
           this.fecharModal();      // 1º Fecha a janela
           this.carregarMembros();  // 2º Atualiza a tabela no fundo
         },
-        error: (e) => {
+        error: (e: any) => {
           console.error(e);
           alert('Erro ao editar: ' + (e.error.detail || e.message));
         }

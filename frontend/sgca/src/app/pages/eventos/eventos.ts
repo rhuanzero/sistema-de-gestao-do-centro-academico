@@ -33,12 +33,12 @@ novoEvento = {
   }
 
   carregarEventos() {
-    this.apiService.getEvents().subscribe({
-      next: (dados) => {
+    this.apiService.getEventos().subscribe({
+      next: (dados: any) => {
         console.log('Eventos carregados:', dados);
         this.eventos = dados;
       },
-      error: (e) => console.error('Erro ao carregar eventos:', e)
+      error: (e: any) => console.error('Erro ao carregar eventos:', e)
     });
   }
 
@@ -79,13 +79,13 @@ novoEvento = {
 
     console.log('Enviando:', payload); // Debug
 
-    this.apiService.createEvent(payload).subscribe({
+    this.apiService.createEvento(payload as any).subscribe({
       next: () => {
         alert('Evento criado com sucesso!');
         this.mostrarModal = false;
         this.carregarEventos();
       },
-      error: (e) => {
+      error: (e: any) => {
         console.error(e);
         const msg = e.error.detail ? JSON.stringify(e.error.detail) : e.message;
         alert('Erro ao criar evento: ' + msg);
@@ -95,11 +95,11 @@ novoEvento = {
 
 excluir(id: string) {
     if (confirm('Tem certeza que deseja cancelar este evento?')) {
-      this.apiService.deleteEvent(id).subscribe({
+      this.apiService.deleteEvento(id).subscribe({
         next: () => {
           this.carregarEventos(); // Sucesso normal
         },
-        error: (e) => {
+        error: (e: any) => {
           // SE O ERRO FOR 404, SIGNIFICA QUE JÁ FOI APAGADO.
           // ENTÃO ATUALIZAMOS A LISTA MESMO ASSIM.
           if (e.status === 404) {

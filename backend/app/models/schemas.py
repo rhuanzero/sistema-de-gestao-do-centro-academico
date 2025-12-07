@@ -47,14 +47,11 @@ class UsuarioBase(BaseModel):
     cargo: CargoEnum = CargoEnum.Membro
     status: str = "Ativo"
     departamento_id: Optional[int] = None
-    # `centro_academico_id` is intentionally omitted here for create payloads.
-    # The server will set it to the centro acadêmico of the authenticated user.
     
     @field_validator('cpf')
     def validate_cpf(cls, v):
         if v is None:
             return v
-        # Remove caracteres não numéricos
         cpf = re.sub(r'\D', '', v)
         if len(cpf) != 11:
             raise ValueError('CPF deve ter 11 dígitos')
@@ -64,7 +61,6 @@ class UsuarioBase(BaseModel):
     def validate_telefone(cls, v):
         if v is None:
             return v
-        # Remove caracteres não numéricos
         telefone = re.sub(r'\D', '', v)
         if len(telefone) < 10 or len(telefone) > 11:
             raise ValueError('Telefone deve ter 10 ou 11 dígitos')
@@ -97,9 +93,7 @@ class TransacaoBase(BaseModel):
     data: datetime
     tipo: str = Field(pattern="^(Receita|Despesa)$")
 
-
 class TransacaoCreate(TransacaoBase):
-    # Cliente não deve enviar `usuario_id` nem `centro_academico_id`.
     pass
 
 class TransacaoUpdate(BaseModel):
@@ -119,7 +113,7 @@ class TransacaoResponse(TransacaoBase):
 class Tarefa(BaseModel):
     id_interno: int
     descricao: str
-    status: str = "Pendente" # Pendente, Concluida
+    status: str = "Pendente"
     usuario_responsavel_id: int
 
 class Patrocinio(BaseModel):
@@ -141,7 +135,6 @@ class EventoCreate(BaseModel):
 
     @field_validator('data_inicio', mode='before')
     def ensure_datetime_for_start(cls, v):
-        # Allow date or datetime-ish strings; pydantic will coerce
         return v
 
     @field_validator('data_fim', mode='before')
@@ -151,14 +144,11 @@ class EventoCreate(BaseModel):
     @classmethod
     @model_validator(mode='after')
     def validate_dates(cls, model):
-        # This runs after model parsing; `v` is the model instance
-        # Ensure data_inicio is not in the past and data_fim >= data_inicio
         data_inicio = model.data_inicio
         data_fim = model.data_fim
-
         now = datetime.utcnow()
-        # normalize to date boundary for 'past' check
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        
         if data_inicio < today_start:
             raise ValueError('A data de início não pode ser no passado.')
 
@@ -180,7 +170,6 @@ class SolicitacaoComunicacaoCreate(BaseModel):
     prazo_sugerido: date
     publico_alvo: str
 
-
 class SolicitacaoComunicacaoResponse(BaseModel):
     id: str
     titulo: str
@@ -197,6 +186,7 @@ class Token(BaseModel):
     token_type: str
 
 # --- Schemas de Patrimônio (MongoDB) ---
+# 👇 AQUI ESTAVA O PROBLEMA: Atualizei para incluir valor, tombo e localizacao
 class HistoricoItem(BaseModel):
     timestamp: datetime
     usuario_id: int
@@ -205,9 +195,15 @@ class HistoricoItem(BaseModel):
 
 class PatrimonioBase(BaseModel):
     nome: str
-    descricao: str
-    status: str = "Disponível" # Disponível, Em uso, Manutenção, Baixado
-    data_aquisicao: date
+    tombo: Optional[str] = None
+    
+    # 👇 AQUI ESTÁ A CORREÇÃO: Adicione " = 0.0"
+    valor: float = 0.0 
+    
+    localizacao: Optional[str] = None
+    descricao: Optional[str] = None
+    status: str = "Disponível" 
+    data_aquisicao: Optional[date] = None
     historico: List[HistoricoItem] = []
 
 class PatrimonioCreate(PatrimonioBase):
@@ -215,6 +211,9 @@ class PatrimonioCreate(PatrimonioBase):
 
 class PatrimonioUpdate(BaseModel):
     nome: Optional[str] = None
+    tombo: Optional[str] = None       # <--- Adicionado
+    valor: Optional[float] = None     # <--- Adicionado
+    localizacao: Optional[str] = None # <--- Adicionado
     descricao: Optional[str] = None
     status: Optional[str] = None
     data_aquisicao: Optional[date] = None
@@ -236,7 +235,6 @@ class EventoUpdate(BaseModel):
     responsaveis_ids: Optional[List[int]] = None
     status: Optional[str] = None
 
-
 class EventoResponse(BaseModel):
     id: str
     titulo: str
@@ -252,7 +250,6 @@ class EventoResponse(BaseModel):
     criado_em: Optional[datetime] = None
     criado_por: Optional[Dict[str, Any]] = None
 
-
 class PostagemUpdate(BaseModel):
     titulo: Optional[str] = None
     conteudo_texto: Optional[str] = None
@@ -260,7 +257,6 @@ class PostagemUpdate(BaseModel):
     data_agendamento: Optional[datetime] = None
     anexos: Optional[List[str]] = None
     status: Optional[str] = None
-
 
 class PostagemResponse(BaseModel):
     id: str
@@ -273,13 +269,11 @@ class PostagemResponse(BaseModel):
     status: str
     criado_em: Optional[datetime] = None
 
-
 class BalanceResponse(BaseModel):
     saldo_atual: float
     receitas: float
     despesas: float
     ultima_atualizacao: str
-
 
 class ReportTransaction(BaseModel):
     id: int
@@ -288,7 +282,6 @@ class ReportTransaction(BaseModel):
     valor: float
     tipo: str
     responsavel: str
-
 
 class ReportResponse(BaseModel):
     periodo: Dict[str, str]
@@ -299,26 +292,21 @@ class ReportResponse(BaseModel):
     total_registros: int
     gerado_em: str
 
-
 # --- Schemas comuns de criação/mensagem ---
 class CreatedResponse(BaseModel):
     id: str
     message: str
 
-
 class CreatedWithStatus(BaseModel):
     id: str
     status: str
-
 
 class TaskCreatedResponse(BaseModel):
     message: str
     task_id: int
 
-
 class SimpleMessageResponse(BaseModel):
     message: str
-
 
 class MessageStatusResponse(BaseModel):
     message: str

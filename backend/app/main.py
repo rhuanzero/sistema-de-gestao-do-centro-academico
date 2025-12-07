@@ -4,6 +4,7 @@ from app.database import engine, Base
 import os
 from app.routers import auth, members, finance, events, communication, patrimony
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import users
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +40,7 @@ app.include_router(finance.router)
 app.include_router(events.router)
 app.include_router(communication.router)
 app.include_router(patrimony.router)
+app.include_router(users.router)
 
 @app.get("/")
 @app.get("/", response_model=dict)
