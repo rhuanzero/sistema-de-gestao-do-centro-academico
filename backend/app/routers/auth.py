@@ -140,3 +140,8 @@ async def read_users_me(
     )
     user = result.scalars().first()
     return user
+
+@router.get("/me", response_model=UsuarioResponse)
+async def ler_perfil_atual(current_user: Usuario = Depends(get_current_user)):
+    """Retorna os dados do usuário logado"""
+    return current_user

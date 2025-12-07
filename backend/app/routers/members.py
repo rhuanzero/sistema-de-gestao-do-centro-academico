@@ -86,3 +86,34 @@ async def update_member(
         raise HTTPException(status_code=400, detail=f"Erro ao atualizar usuário: {e}")
 
     return db_user
+
+# Adicione isso no final do arquivo members.py
+
+@router.delete("/{member_id}", status_code=204)
+async def delete_member(
+    member_id: int, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: Usuario = Depends(get_current_user)
+):
+    # 1. Verifica permissão (Só Presidente deleta)
+    if current_user.cargo != CargoEnum.Presidente:
+        raise HTTPException(status_code=403, detail="Apenas o Presidente pode excluir membros.")
+
+    # 2. Busca o usuário no banco
+    query = select(Usuario).where(Usuario.id == member_id)
+    result = await db.execute(query)
+    member_to_delete = result.scalars().first()
+
+    # 3. Se não achar, erro 404
+    if not member_to_delete:
+        raise HTTPException(status_code=404, detail="Membro não encontrado.")
+
+    # 4. (Opcional) Proteção para não se auto-deletar
+    if member_to_delete.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Você não pode excluir sua própria conta.")
+
+    # 5. Deleta e salva
+    await db.delete(member_to_delete)
+    await db.commit()
+    
+    return None # Retorna vazio (204 No Content)

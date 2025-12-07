@@ -1,36 +1,93 @@
 <div class="page-header">
   <h2>Gestão de Membros</h2>
-  <button class="btn-primary">+ Novo Membro</button>
+  <button class="btn-primary" (click)="abrirModalCriacao()">+ Novo Membro</button>
 </div>
 
 <div class="card-table">
-<table>
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Cargo</th>
-      <th>Email</th> <th>Status</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
- <tbody>
-  <tr *ngFor="let membro of membros">
+  
+  <p *ngIf="carregando">⏳ Carregando...</p>
+
+  <p *ngIf="!carregando && membros.length === 0">Nenhum membro encontrado.</p>
+
+  <table *ngIf="membros.length > 0">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Cargo</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let membro of membros">
+        <td>{{ membro.nome }}</td>
+        
+        <td>
+          <span [style.color]="membro.cargo === 'Presidente' ? 'black' : '#555'"
+                [style.font-weight]="membro.cargo === 'Presidente' ? 'bold' : 'normal'">
+            {{ membro.cargo }}
+          </span>
+        </td>
+
+        <td>{{ membro.email }}</td>
+        
+        <td>
+          <span style="color: green; font-weight: bold;">
+            {{ membro.status || 'Ativo' }}
+          </span>
+        </td>
+        
+        <td>
+          <button (click)="abrirModalEdicao(membro)" style="cursor: pointer; margin-right: 10px; border: none; background: none; font-size: 1.2rem;" title="Editar">✏️</button>
+          <button (click)="excluir(membro)" style="cursor: pointer; border: none; background: none; font-size: 1.2rem;" title="Excluir">🗑️</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal-overlay" *ngIf="mostrarModal">
+  <div class="modal-content">
+    <h3>{{ membroForm.id ? 'Editar Membro' : 'Novo Membro' }}</h3>
     
-    <td>{{ membro.nome }}</td>
+    <form (ngSubmit)="salvar()">
+      
+      <label>Nome:</label>
+      <input type="text" [(ngModel)]="membroForm.nome" name="nome" required>
 
-    <td>Membro</td>
+      <label>Email:</label>
+      <input type="email" [(ngModel)]="membroForm.email" name="email" required>
 
-    <td>{{ membro.email }}</td>
+      <div style="display: flex; gap: 10px;">
+        <div style="flex: 1;">
+          <label>CPF:</label>
+          <input type="text" [(ngModel)]="membroForm.cpf" name="cpf">
+        </div>
+        <div style="flex: 1;">
+          <label>Telefone:</label>
+          <input type="text" [(ngModel)]="membroForm.telefone" name="telefone">
+        </div>
+      </div>
 
-    <td>
-      <span style="color: green; font-weight: bold;">Ativo</span>
-    </td>
+      <label>Cargo:</label>
+      <select [(ngModel)]="membroForm.cargo" name="cargo" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+        <option value="Presidente">Presidente</option>
+        <option value="Tesoureiro">Tesoureiro</option>
+        <option value="Coordenador">Coordenador</option>
+        <option value="Membro">Membro</option>
+      </select>
+      
+      <div *ngIf="!membroForm.id" style="margin-bottom: 15px;">
+        <label>Senha Inicial:</label>
+        <input type="password" [(ngModel)]="membroForm.senha" name="senha" required placeholder="Crie uma senha">
+      </div>
 
-    <td>
-      <button>✏️</button>
-      <button>🗑️</button>
-    </td>
-  </tr>
-</tbody>
-</table>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn-save">Salvar</button>
+      </div>
+
+    </form>
+  </div>
 </div>

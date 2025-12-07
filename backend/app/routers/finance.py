@@ -292,3 +292,25 @@ async def delete_transaction(
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Falha ao remover transação: {str(e)}")
     
+# Adicione isso no finance.py para a tabela do Angular carregar
+
+@router.get("/transactions", response_model=list[TransacaoResponse])
+async def list_transactions(
+    limit: int = 50, # Limite para não travar o banco
+    skip: int = 0,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Lista as últimas transações para exibir no extrato simples.
+    """
+    query = (
+        select(Transacao)
+        .where(Transacao.centro_academico_id == current_user.centro_academico_id)
+        .order_by(Transacao.data.desc(), Transacao.id.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    
+    result = await db.execute(query)
+    return result.scalars().all()

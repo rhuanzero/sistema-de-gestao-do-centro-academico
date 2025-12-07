@@ -1,23 +1,293 @@
-:host { display: block; padding: 30px 20px; }
-.events-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+/* --- LAYOUT E CABEÇALHO --- */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px; /* Mais espaço para separar do conteúdo */
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f3f4f6; /* Linha sutil separando o header */
+}
 
+.header-title h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #111827; /* Preto suave (Slate 900) */
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.header-title p {
+  margin: 8px 0 0;
+  color: #6b7280; /* Cinza médio (Slate 500) */
+  font-size: 0.95rem;
+}
+
+/* --- BOTÃO PRIMÁRIO (Moderno) --- */
+.btn-primary {
+  background-color: #6366f1; /* Indigo vibrante */
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3); /* Sombra colorida */
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary:hover {
+  background-color: #4f46e5;
+  transform: translateY(-2px); /* Flutua levemente */
+  box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+}
+
+/* --- GRID DE CARDS --- */
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* Cards mais largos */
+  gap: 30px;
+}
+
+/* --- CARD DE EVENTO (Estilo Clean) --- */
 .event-card {
-  background: white; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px;
-  display: flex; gap: 15px; align-items: start; position: relative;
+  background: white;
+  border-radius: 16px; /* Bordas mais arredondadas */
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  position: relative;
 }
 
+.event-card:hover {
+  transform: translateY(-5px);
+  border-color: #c7d2fe; /* Borda fica levemente roxa */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* DATA (Estilo Calendário Lateral) */
 .event-date {
-  background: #f3f4f6; padding: 10px; border-radius: 4px; text-align: center; min-width: 50px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: #e0e7ff; /* Indigo bem claro */
+  color: #4338ca; /* Indigo escuro */
+  padding: 8px 16px;
+  border-radius: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
-.event-date span { display: block; font-size: 1.2rem; font-weight: bold; color: #333; }
-.event-date small { text-transform: uppercase; font-size: 0.7rem; color: #666; }
 
-.event-details h3 { margin: 0 0 5px; font-size: 1rem; }
-.event-details p { margin: 0 0 10px; font-size: 0.85rem; color: #666; }
-.status-tag { background: #e0e7ff; color: #3b5bdb; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; }
-
-.btn-manage {
-  position: absolute; right: 20px; top: 20px; background: transparent; border: 1px solid #e5e7eb;
-  padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.75rem;
+.day {
+  font-size: 1.4rem;
+  font-weight: 800;
 }
-.btn-manage:hover { background: #f9fafb; }
+
+.month {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* CONTEÚDO DO CARD */
+.event-content {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.event-content h3 {
+  margin: 0 0 15px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f2937;
+  padding-right: 60px; /* Espaço para não bater na data */
+  line-height: 1.4;
+}
+
+/* Metadados (Hora e Local) */
+.event-meta {
+  font-size: 0.9rem;
+  color: #6b7280;
+  background-color: #f9fafb;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.event-desc {
+  font-size: 0.95rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  flex-grow: 1; /* Empurra o rodapé para baixo */
+}
+
+/* RODAPÉ DO CARD */
+.event-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.event-footer small {
+  color: #9ca3af;
+  font-weight: 600;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Botão Cancelar (Discreto mas acessível) */
+.btn-delete {
+  background-color: transparent;
+  color: #ef4444; /* Vermelho */
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete:hover {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+/* --- MENSAGEM VAZIA --- */
+.no-events {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 60px;
+  background-color: #f9fafb;
+  border: 2px dashed #e5e7eb;
+  border-radius: 16px;
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+/* --- MODAL (Glassmorphism) --- */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(17, 24, 39, 0.7); /* Fundo escuro elegante */
+  backdrop-filter: blur(5px); /* Desfoque no fundo */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: white;
+  padding: 35px;
+  border-radius: 20px;
+  width: 500px;
+  max-width: 95%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(0);
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  font-size: 1.5rem;
+  color: #111827;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #f3f4f6;
+  padding-bottom: 15px;
+}
+
+/* Inputs do Modal */
+.modal-content label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+  margin-top: 15px;
+}
+
+.modal-content input, 
+.modal-content textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background-color: #f9fafb;
+  box-sizing: border-box; /* Garante que o padding não quebre a largura */
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+  outline: none;
+  background-color: white;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); /* Anel de foco */
+}
+
+/* Botões do Modal */
+.modal-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-save {
+  background-color: #10b981; /* Verde Esmeralda */
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-save:hover { background-color: #059669; }
+
+.btn-cancel {
+  background-color: white;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-cancel:hover { background-color: #f3f4f6; }
+
+/* Animações */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

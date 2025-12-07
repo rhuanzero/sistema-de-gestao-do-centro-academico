@@ -1,14 +1,81 @@
+<div class="page-header">
+  <div class="header-title">
+    <h2>📅 Agenda de Eventos</h2>
+    <p>Próximas atividades e reuniões do CA</p>
+  </div>
+  <button class="btn-primary" (click)="abrirModal()">+ Novo Evento</button>
+</div>
+
 <div class="events-grid">
-  <div class="event-card" *ngFor="let event of events">
+  
+  <div class="event-card" *ngFor="let ev of eventos">
+    
     <div class="event-date">
-      <span>{{ event.day }}</span>
-      <small>{{ event.month }}</small>
+      <span class="day">{{ ev.data_inicio | date:'dd' }}</span>
+      <span class="month">{{ ev.data_inicio | date:'MMM' }}</span>
     </div>
-    <div class="event-details">
-      <h3>{{ event.title }}</h3>
-      <p>{{ event.location }}</p>
-      <span class="status-tag">{{ event.status }}</span>
+
+    <div class="event-content">
+      <h3>{{ ev.titulo }}</h3>
+      
+      <p class="event-meta">
+        🕒 {{ ev.data_inicio | date:'HH:mm' }} - {{ ev.data_fim | date:'HH:mm' }}
+        <br>
+        📍 {{ ev.local }}
+      </p>
+
+      <p class="event-desc">{{ ev.descricao }}</p>
+
+      <div class="event-footer">
+        <small>👤 {{ ev.organizador }}</small>
+        
+        <button class="btn-delete" (click)="excluir(ev.id || ev._id)">
+          Cancelar
+        </button>
+      </div>
     </div>
-    <button class="btn-manage">Gerenciar</button>
+  </div>
+
+  <div class="no-events" *ngIf="eventos.length === 0">
+    <p>Nenhum evento agendado.</p>
+  </div>
+
+</div>
+
+<div class="modal-overlay" *ngIf="mostrarModal">
+  <div class="modal-content">
+    <h3>Novo Evento</h3>
+    
+    <form (ngSubmit)="salvar()">
+      
+      <label>Título do Evento:</label>
+      <input type="text" [(ngModel)]="novoEvento.titulo" name="titulo" required placeholder="Ex: Calourada 2026">
+
+      <div style="display: flex; gap: 15px;">
+        <div style="flex: 1;">
+          <label>Início:</label>
+          <input type="datetime-local" [(ngModel)]="novoEvento.data_inicio" name="d_ini" required>
+        </div>
+        <div style="flex: 1;">
+          <label>Fim:</label>
+          <input type="datetime-local" [(ngModel)]="novoEvento.data_fim" name="d_fim" required>
+        </div>
+      </div>
+
+      <label>Local:</label>
+      <input type="text" [(ngModel)]="novoEvento.local" name="local" required placeholder="Ex: Auditório Principal">
+
+      <label>Organizador:</label>
+      <input type="text" [(ngModel)]="novoEvento.organizador" name="organizador" required placeholder="Ex: Diretoria de Eventos">
+      
+      <label>Descrição:</label>
+      <textarea [(ngModel)]="novoEvento.descricao" name="descricao" rows="3" placeholder="Detalhes do evento..."></textarea>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="mostrarModal=false">Cancelar</button>
+        <button type="submit" class="btn-save">Agendar</button>
+      </div>
+
+    </form>
   </div>
 </div>

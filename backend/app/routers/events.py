@@ -48,9 +48,9 @@ async def create_event(
     return {"id": str(new_event.inserted_id), "message": "Evento criado com sucesso"}
 
 
-@router.put("/{evento_titulo}", response_model=EventoResponse)
+@router.put("/{evento_identificador}", response_model=EventoResponse)
 async def update_event(
-    evento_titulo: str,
+    evento_identificador: str,
     update_data: EventoUpdate,
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
@@ -59,7 +59,13 @@ async def update_event(
     if current_user.cargo not in [CargoEnum.Coordenador, CargoEnum.Presidente]:
         raise HTTPException(status_code=403, detail="Permissão insuficiente para atualizar evento.")
 
-    evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    query = {}
+    if ObjectId.is_valid(evento_identificador):
+        query = {"_id": ObjectId(evento_identificador)}
+    else:
+        query = {"titulo": {"$regex": f"^{evento_identificador}$", "$options": "i"}}
+
+    evento = await db.eventos.find_one(query)
     if not evento:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
 
@@ -69,18 +75,17 @@ async def update_event(
         raise HTTPException(status_code=400, detail="Nenhum campo para atualizar.")
 
     result = await db.eventos.update_one({"_id": evento["_id"]}, {"$set": update_dict})
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Falha ao atualizar evento")
-
+    
+    # Busca o documento atualizado para retornar
     updated = await db.eventos.find_one({"_id": evento["_id"]})
     updated["id"] = str(updated["_id"])
     del updated["_id"]
     return updated
 
 
-@router.delete("/{evento_titulo}", status_code=204)
+@router.delete("/{evento_identificador}", status_code=204)
 async def delete_event(
-    evento_titulo: str,
+    evento_identificador: str, # Renomeei para fazer sentido (pode ser ID ou Título)
     current_user: Usuario = Depends(get_current_user),
     db = Depends(get_mongo_db)
 ):
@@ -88,13 +93,25 @@ async def delete_event(
     if current_user.cargo != CargoEnum.Presidente:
         raise HTTPException(status_code=403, detail="Apenas o Presidente pode deletar eventos.")
 
-    evento = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    query = {}
+    
+    # Verifica se a string passada é um ObjectId válido
+    if ObjectId.is_valid(evento_identificador):
+        query = {"_id": ObjectId(evento_identificador)}
+    else:
+        # Se não for ID, busca pelo título como antes
+        query = {"titulo": {"$regex": f"^{evento_identificador}$", "$options": "i"}}
+
+    evento = await db.eventos.find_one(query)
+    
     if not evento:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
 
     result = await db.eventos.delete_one({"_id": evento["_id"]})
+    
     if result.deleted_count == 0:
         raise HTTPException(status_code=400, detail="Falha ao deletar evento")
+    
     return
 
 @router.get("/", response_model=list[EventoResponse])
@@ -113,20 +130,23 @@ async def list_events(
         results.append(event)
         
     return results
-
-@router.get("/{evento_titulo}", response_model=EventoResponse)
+@router.get("/{evento_identificador}", response_model=EventoResponse)
 async def get_event(
-    evento_titulo: str,
+    evento_identificador: str,
     db = Depends(get_mongo_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    # Busca o evento pelo título exato (case-insensitive)
-    event = await db.eventos.find_one({"titulo": {"$regex": f"^{evento_titulo}$", "$options": "i"}})
+    query = {}
+    if ObjectId.is_valid(evento_identificador):
+        query = {"_id": ObjectId(evento_identificador)}
+    else:
+        query = {"titulo": {"$regex": f"^{evento_identificador}$", "$options": "i"}}
+
+    event = await db.eventos.find_one(query)
     
     if not event:
         raise HTTPException(status_code=404, detail="Evento não encontrado")
     
-    # Converte o ObjectId para string
     event["id"] = str(event["_id"])
     del event["_id"]
     

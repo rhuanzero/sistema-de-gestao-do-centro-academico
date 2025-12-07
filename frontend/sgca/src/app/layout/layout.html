@@ -11,9 +11,15 @@
       <a routerLink="/membros" routerLinkActive="active">Membros</a>
       <a routerLink="/financeiro" routerLinkActive="active">Financeiro</a>
       <a routerLink="/eventos" routerLinkActive="active">Eventos</a>
+      <a routerLink="/patrimonio" routerLinkActive="active">Patrimônio</a>
     </nav>
 
-    <div class="navbar-actions">
+    <div class="navbar-actions" style="display: flex; align-items: center; gap: 15px;">
+      
+      <span style="font-weight: bold; color: white; font-size: 0.9rem;">
+        Olá, {{ nomeUsuario }} 👋
+      </span>
+
       <a routerLink="/login" class="btn-logout">Sair 🚪</a>
     </div>
 
@@ -21,7 +27,7 @@
 
   <main class="content-area">
     <div class="container">
-      <router-outlet></router-outlet>
+      <router-outlet></router-outlet> 
     </div>
   </main>
 

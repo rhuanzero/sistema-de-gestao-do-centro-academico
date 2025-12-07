@@ -1,12 +1,29 @@
-import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
-// Importe seu componente de Menu aqui se for usar, ex: import { SidebarComponent } ...
+import { Component, OnInit } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router'; // Imports de rota
+import { ApiService } from '../services/apiservice';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink], // <--- Importante
+  imports: [RouterOutlet, RouterLink, RouterLinkActive], // <--- Verifique se RouterOutlet está aqui
   templateUrl: './layout.html',
   styleUrl: './layout.css'
 })
-export class Layout {}
+export class Layout implements OnInit {
+  
+  nomeUsuario: string = 'Carregando...';
+
+  constructor(private apiService: ApiService) {}
+
+  ngOnInit() {
+    this.apiService.getMe().subscribe({
+      next: (user) => {
+        this.nomeUsuario = user.nome;
+      },
+      error: (e) => {
+        console.error('Erro ao pegar usuário:', e);
+        this.nomeUsuario = 'Visitante';
+      }
+    });
+  }
+}

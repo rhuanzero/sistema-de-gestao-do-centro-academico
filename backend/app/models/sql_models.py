@@ -5,29 +5,11 @@ from app.database import Base
 import enum
 from datetime import datetime
 from enum import IntEnum
+from app.models.enums import CargoEnum, StatusEnum, TipoTransacao, DepartamentoEnum
 
 class TipoTransacao(str, enum.Enum):
     Receita = "Receita"
     Despesa = "Despesa"
-
-class CargoEnum(str, enum.Enum):
-    Presidente = "Presidente"
-    Tesoureiro = "Tesoureiro"
-    Coordenador = "Coordenador"
-    Membro = "Membro"
-
-class DepartamentoEnum(IntEnum):
-    Presidencia = 1
-    Financeiro = 2
-    Eventos = 3
-    Comunicacao = 4
-    Patrimonio = 5
-    def __int__(self):
-        return self.value
-
-class StatusEnum(str, enum.Enum):
-    Ativo = "Ativo"
-    Inativo = "Inativo"
 
 class CentroAcademico(Base):
     __tablename__ = "centro_academico"

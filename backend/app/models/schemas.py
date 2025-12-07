@@ -3,13 +3,7 @@ from typing import Optional, List, Any, Dict
 from datetime import date, datetime
 from enum import Enum
 import re
-
-# --- Enums para reutilização ---
-class Cargo(str, Enum):
-    Presidente = "Presidente"
-    Tesoureiro = "Tesoureiro"
-    Coordenador = "Coordenador"
-    Membro = "Membro"
+from app.models.enums import CargoEnum, DepartamentoEnum, TipoTransacao
 
 # --- Schemas de Centro Acadêmico ---
 class CentroAcademicoBase(BaseModel):
@@ -50,7 +44,7 @@ class UsuarioBase(BaseModel):
     email: EmailStr
     cpf: Optional[str] = None
     telefone: Optional[str] = None
-    cargo: Cargo = Cargo.Membro
+    cargo: CargoEnum = CargoEnum.Membro
     status: str = "Ativo"
     departamento_id: Optional[int] = None
     # `centro_academico_id` is intentionally omitted here for create payloads.
@@ -84,7 +78,7 @@ class UsuarioUpdate(BaseModel):
     email: Optional[EmailStr] = None
     cpf: Optional[str] = None
     telefone: Optional[str] = None
-    cargo: Optional[Cargo] = None
+    cargo: Optional[CargoEnum] = None
     status: Optional[str] = None
     departamento_id: Optional[int] = None
     senha: Optional[str] = None

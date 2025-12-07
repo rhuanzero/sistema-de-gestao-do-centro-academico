@@ -1,29 +1,107 @@
-<div class="financial-summary">
-  <div class="card money-card">
-    <span>Saldo Atual</span>
-    <h3 class="text-blue">R$ 12.450,00</h3>
+<div class="page-header">
+  <div>
+    <h2>Gestão Financeira</h2>
+    <p style="color: #666; margin: 0;">Visão geral do caixa do Centro Acadêmico</p>
   </div>
-  <div class="card money-card">
-    <span>Receitas (Mês)</span>
-    <h3 class="text-green">R$ 3.200,00</h3>
-  </div>
-  <div class="card money-card">
-    <span>Despesas (Mês)</span>
-    <h3 class="text-red">R$ 850,00</h3>
-  </div>
+  <button class="btn-primary" (click)="abrirModal()">
+    <span style="margin-right: 5px;">+</span> Novo Lançamento
+  </button>
 </div>
 
-<div class="transactions-section">
-  <h3>Últimas Transações</h3>
-  <div class="transaction-list">
-    <div class="transaction-item" *ngFor="let t of transactions">
-      <div class="t-info">
-        <strong>{{ t.desc }}</strong>
-        <small>{{ t.date }}</small>
-      </div>
-      <span class="t-value" [class.positive]="t.type === 'in'" [class.negative]="t.type === 'out'">
-        {{ t.type === 'in' ? '+' : '-' }} R$ {{ t.value }}
-      </span>
+<div class="cards-container">
+  
+  <div class="card card-saldo">
+    <div class="card-icon">💰</div>
+    <div class="card-info">
+      <h3>Saldo Atual</h3>
+      <p>R$ {{ saldo.saldo_atual | number:'1.2-2' }}</p>
     </div>
+  </div>
+
+  <div class="card card-receita">
+    <div class="card-icon">📈</div>
+    <div class="card-info">
+      <h3>Receitas (Mês)</h3>
+      <p>R$ {{ saldo.receitas | number:'1.2-2' }}</p>
+    </div>
+  </div>
+
+  <div class="card card-despesa">
+    <div class="card-icon">📉</div>
+    <div class="card-info">
+      <h3>Despesas (Mês)</h3>
+      <p>R$ {{ saldo.despesas | number:'1.2-2' }}</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="card-table">
+  <div class="table-header">
+    <h3>Últimas Transações</h3>
+    </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 15%;">Data</th>
+        <th style="width: 45%;">Descrição</th>
+        <th style="width: 20%;">Tipo</th>
+        <th style="width: 20%; text-align: right;">Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let t of transacoes">
+        <td style="color: #6b7280;">
+            {{ t.data | date:'dd/MM/yyyy HH:mm' }}
+        </td>
+        
+        <td style="font-weight: 500; color: #374151;">
+            {{ t.descricao }}
+        </td>
+        
+        <td>
+          <span [ngClass]="t.tipo === 'Receita' ? 'badge-receita' : 'badge-despesa'">
+            {{ t.tipo }}
+          </span>
+        </td>
+        
+        <td style="text-align: right; font-weight: bold;" 
+            [style.color]="t.tipo === 'Receita' ? '#059669' : '#dc2626'">
+          R$ {{ t.valor | number:'1.2-2' }}
+        </td>
+      </tr>
+      
+      <tr *ngIf="transacoes.length === 0">
+        <td colspan="4" style="text-align: center; padding: 30px; color: #9ca3af;">
+            Nenhum lançamento encontrado.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal-overlay" *ngIf="mostrarModal">
+  <div class="modal-content">
+    <h3>Novo Lançamento</h3>
+    <form (ngSubmit)="salvar()">
+      
+      <label>Descrição:</label>
+      <input type="text" [(ngModel)]="novaTransacao.descricao" name="desc" required placeholder="Ex: Venda de Camisas">
+
+      <label>Valor (R$):</label>
+      <input type="number" [(ngModel)]="novaTransacao.valor" name="val" required placeholder="0,00">
+
+      <label>Tipo:</label>
+      <select [(ngModel)]="novaTransacao.tipo" name="tipo">
+        <option value="Receita">Receita (Entrada)</option>
+        <option value="Despesa">Despesa (Saída)</option>
+      </select>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="fecharModal()">Cancelar</button>
+        <button type="submit" class="btn-save">Salvar</button>
+      </div>
+    </form>
   </div>
 </div>
