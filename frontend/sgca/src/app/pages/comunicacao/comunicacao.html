@@ -1,39 +1,150 @@
-<div class="page-header">
-  <h2>Comunicação e Marketing</h2>
-  <div class="header-actions">
-    <button class="btn-secondary">📄 Nova Ata/Ofício</button>
-    <button class="btn-primary">📱 Novo Post</button>
-  </div>
-</div>
+<div class="comunicacao-container">
+  
+  <header class="page-header">
+    <h2>📢 Comunicação & Marketing</h2>
+    <button (click)="abrirModalCriacao()" class="btn-novo">+ Novo Item</button>
+  </header>
 
-<h3 class="section-subtitle">Planejamento de Mídia</h3>
-<div class="social-grid">
-  <div class="post-card" *ngFor="let post of posts">
-    <div class="post-header">
-      <span class="platform-tag" [class.insta]="post.platform === 'Instagram'" [class.linkedin]="post.platform === 'LinkedIn'">
-        {{ post.platform }}
-      </span>
-      <span class="status-dot" [class.scheduled]="post.status === 'Agendado'" [class.published]="post.status === 'Publicado'"></span>
-    </div>
-    <div class="post-content">
-      <h4>{{ post.title }}</h4>
-      <p>{{ post.date }}</p>
-    </div>
-    <div class="post-footer">
-      <span class="status-text">{{ post.status }}</span>
-      <button class="btn-icon">✏️</button>
+  <div class="grid-layout">
+    
+    <section class="card-section">
+      <h3>📱 Postagens</h3>
+      
+      <div *ngIf="loading() && posts().length === 0" class="loading">Carregando dados...</div>
+      
+      <div *ngIf="posts().length === 0 && !loading()" class="empty">Nenhuma postagem encontrada.</div>
+      
+      <div class="list-items">
+        <div *ngFor="let post of posts()" class="item-card">
+          <div class="icon-social">
+             <span>📢</span>
+          </div>
+          
+          <div class="item-info">
+            <h4>{{ post.titulo }}</h4>
+            <p>{{ post.midia_destino }} • {{ post.data_agendamento | date:'dd/MM HH:mm' }}</p>
+          </div>
+
+          <div class="item-actions">
+            <span [class]="'status-badge ' + getStatusClass(post.status)">{{ post.status }}</span>
+            <button (click)="editarItem(post, 'post')" class="btn-icon" title="Editar">✏️</button>
+            <button (click)="prepararExclusao(post, 'post')" class="btn-icon btn-delete" title="Excluir">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card-section">
+      <h3>📄 Solicitações</h3>
+      
+      <div *ngIf="loading() && docs().length === 0" class="loading">Carregando dados...</div>
+      <div *ngIf="docs().length === 0 && !loading()" class="empty">Nenhuma solicitação encontrada.</div>
+
+      <div class="list-items">
+        <div *ngFor="let doc of docs()" class="item-card doc-card">
+          <div class="icon-doc">📝</div>
+          
+          <div class="item-info">
+            <h4>{{ doc.titulo }}</h4>
+            <p>Por: {{ doc.solicitante_nome }} • Prazo: {{ doc.prazo_sugerido | date:'dd/MM' }}</p>
+          </div>
+          
+          <div class="item-actions">
+             <span [class]="'status-badge ' + getStatusClass(doc.status)">{{ doc.status }}</span>
+             <button (click)="editarItem(doc, 'request')" class="btn-icon" title="Editar">✏️</button>
+             <button (click)="prepararExclusao(doc, 'request')" class="btn-icon btn-delete" title="Excluir">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div *ngIf="modalAberto()" class="modal-overlay">
+    <div class="modal-box">
+      <h3>{{ modoEdicao() ? 'Editar Item' : 'Novo Item' }}</h3>
+      
+      <div *ngIf="!modoEdicao()" class="type-selector">
+        <label><input type="radio" name="tipo" [(ngModel)]="tipoItem" value="post" (change)="resetarForm()"> 📱 Postagem</label>
+        <label><input type="radio" name="tipo" [(ngModel)]="tipoItem" value="request" (change)="resetarForm()"> 📄 Solicitação</label>
+      </div>
+
+      <form (ngSubmit)="salvarItem()">
+        
+        <div class="form-group">
+          <label>Título</label>
+          <input [(ngModel)]="novoItem.titulo" name="titulo" type="text" required placeholder="Ex: Lançamento Campanha">
+        </div>
+
+        <div *ngIf="tipoItem === 'post'">
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Rede Social</label>
+              <select [(ngModel)]="novoItem.extra" name="midia">
+                <option value="Instagram">Instagram</option>
+                <option value="LinkedIn">LinkedIn</option>
+                <option value="TikTok">TikTok</option>
+                <option value="Blog">Blog</option>
+              </select>
+            </div>
+            <div class="form-group half">
+              <label>Data Agendamento</label>
+              <input [(ngModel)]="novoItem.data" name="data" type="datetime-local" required>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="tipoItem === 'request'">
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Nome Solicitante</label>
+              <input [(ngModel)]="novoItem.extra" name="publico" type="text" placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group half">
+              <label>Prazo Sugerido</label>
+              <input [(ngModel)]="novoItem.data" name="data" type="date" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Descrição / Conteúdo</label>
+          <textarea [(ngModel)]="novoItem.conteudo" name="conteudo" rows="3"></textarea>
+        </div>
+
+        <div *ngIf="modoEdicao()" class="form-group" style="background: #fdf2f8; padding: 10px; border-radius: 8px;">
+          <label style="color: #be185d;">Alterar Status</label>
+          <select [(ngModel)]="novoItem.status" name="status" style="border-color: #be185d; font-weight: bold;">
+            <option value="Rascunho">Rascunho / Pendente</option>
+            <option value="Agendado">Agendado</option>
+            <option value="Publicado">Publicado / Aprovado</option>
+            <option value="Cancelado">Cancelado / Rejeitado</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" (click)="fecharModal()" class="btn-cancelar">Cancelar</button>
+          <button type="submit" [disabled]="loading()" class="btn-confirmar">
+            {{ loading() ? 'Salvando...' : 'Salvar' }}
+          </button>
+        </div>
+
+      </form>
     </div>
   </div>
-</div>
 
-<h3 class="section-subtitle">Documentos Oficiais</h3>
-<div class="docs-list">
-  <div class="doc-item" *ngFor="let doc of docs">
-    <div class="doc-icon">📄</div>
-    <div class="doc-info">
-      <strong>{{ doc.title }}</strong>
-      <small>Enviado em: {{ doc.date }} • Por: {{ doc.author }}</small>
+  <div *ngIf="modalExclusaoAberto()" class="modal-overlay">
+    <div class="modal-box confirmation-box">
+      <div class="modal-icon">⚠️</div>
+      <h3>Tem certeza, meu nobre?</h3>
+      <p>Você está prestes a excluir <strong>"{{ itemParaExclusao()?.titulo }}"</strong>.</p>
+      <p class="warning-text">Essa ação será salva no banco de dados e não pode ser desfeita.</p>
+
+      <div class="modal-actions centered">
+        <button (click)="fecharModalExclusao()" class="btn-cancelar">Cancelar</button>
+        <button (click)="confirmarExclusao()" class="btn-delete-confirm">
+          {{ loading() ? 'Excluindo...' : 'Sim, excluir' }}
+        </button>
+      </div>
     </div>
-    <button class="btn-download">Baixar</button>
   </div>
 </div>

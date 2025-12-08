@@ -1,93 +1,106 @@
-<div class="page-header">
-  <h2>Gestão de Membros</h2>
-  <button class="btn-primary" (click)="abrirModalCriacao()">+ Novo Membro</button>
-</div>
-
-<div class="card-table">
-  
-  <p *ngIf="carregando">⏳ Carregando...</p>
-
-  <p *ngIf="!carregando && membros.length === 0">Nenhum membro encontrado.</p>
-
-  <table *ngIf="membros.length > 0">
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>Cargo</th>
-        <th>Email</th>
-        <th>Status</th>
-        <th>Ações</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let membro of membros">
-        <td>{{ membro.nome }}</td>
-        
-        <td>
-          <span [style.color]="membro.cargo === 'Presidente' ? 'black' : '#555'"
-                [style.font-weight]="membro.cargo === 'Presidente' ? 'bold' : 'normal'">
-            {{ membro.cargo }}
-          </span>
-        </td>
-
-        <td>{{ membro.email }}</td>
-        
-        <td>
-          <span style="color: green; font-weight: bold;">
-            {{ membro.status || 'Ativo' }}
-          </span>
-        </td>
-        
-        <td>
-          <button (click)="abrirModalEdicao(membro)" style="cursor: pointer; margin-right: 10px; border: none; background: none; font-size: 1.2rem;" title="Editar">✏️</button>
-          <button (click)="excluir(membro)" style="cursor: pointer; border: none; background: none; font-size: 1.2rem;" title="Excluir">🗑️</button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-<div class="modal-overlay" *ngIf="mostrarModal">
-  <div class="modal-content">
-    <h3>{{ membroForm.id ? 'Editar Membro' : 'Novo Membro' }}</h3>
-    
-    <form (ngSubmit)="salvar()">
-      
-      <label>Nome:</label>
-      <input type="text" [(ngModel)]="membroForm.nome" name="nome" required>
-
-      <label>Email:</label>
-      <input type="email" [(ngModel)]="membroForm.email" name="email" required>
-
-      <div style="display: flex; gap: 10px;">
-        <div style="flex: 1;">
-          <label>CPF:</label>
-          <input type="text" [(ngModel)]="membroForm.cpf" name="cpf">
-        </div>
-        <div style="flex: 1;">
-          <label>Telefone:</label>
-          <input type="text" [(ngModel)]="membroForm.telefone" name="telefone">
-        </div>
-      </div>
-
-      <label>Cargo:</label>
-      <select [(ngModel)]="membroForm.cargo" name="cargo" style="width: 100%; padding: 8px; margin-bottom: 10px;">
-        <option value="Presidente">Presidente</option>
-        <option value="Tesoureiro">Tesoureiro</option>
-        <option value="Coordenador">Coordenador</option>
-        <option value="Membro">Membro</option>
-      </select>
-      
-      <div *ngIf="!membroForm.id" style="margin-bottom: 15px;">
-        <label>Senha Inicial:</label>
-        <input type="password" [(ngModel)]="membroForm.senha" name="senha" required placeholder="Crie uma senha">
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" (click)="fecharModal()">Cancelar</button>
-        <button type="submit" class="btn-save">Salvar</button>
-      </div>
-
-    </form>
+<div class="comunicacao-container"> 
+<header class="page-header">
+  <div style="display: flex; align-items: center; gap: 15px;">
+    <h2>👥 Gestão de Membros</h2>
+    <button (click)="logout()" class="btn-cancel" style="padding: 5px 10px; font-size: 0.8rem;">Sair</button>
   </div>
+  
+  <button *ngIf="ehPresidente()" (click)="abrirModalCadastro()" class="btn-novo">+ Novo Membro</button>
+</header>
+
+  <section class="card-section">
+    <h3>Membros do CA</h3>
+    
+    <div *ngIf="loading() && !modalFormAberto()" class="loading">Carregando...</div>
+    <div *ngIf="membros().length === 0 && !loading()" class="empty">Nenhum membro encontrado.</div>
+
+    <div class="list-items">
+      <div *ngFor="let membro of membros()" class="item-card">
+        <div class="icon-social">
+           <span>👤</span>
+        </div>
+        
+        <div class="item-info">
+          <h4>{{ membro.nome }}</h4>
+          <p>{{ membro.cargo }} • {{ membro.email }}</p>
+        </div>
+
+        <div class="item-actions">
+          <span [class]="'status-badge ' + getStatusClass(membro.status)">{{ membro.status }}</span>
+          
+          <ng-container *ngIf="ehPresidente()">
+            <button (click)="editarMembro(membro)" class="btn-icon" title="Editar">✏️</button>
+            <button (click)="prepararExclusao(membro)" class="btn-icon btn-delete" title="Excluir">🗑️</button>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="modalFormAberto()" class="modal-overlay">
+    <div class="modal-content">
+      <h3>{{ modoEdicao() ? 'Editar Membro' : 'Novo Membro' }}</h3>
+      
+      <form (ngSubmit)="salvarMembro()">
+        <label>Nome Completo</label>
+        <input [(ngModel)]="novoMembro.nome" name="nome" type="text" required>
+
+        <label>Email</label>
+        <input [(ngModel)]="novoMembro.email" name="email" type="email" required>
+
+        <div class="row-inputs">
+          <div style="flex: 1; margin-right: 10px;">
+            <label>CPF</label>
+            <input [(ngModel)]="novoMembro.cpf" name="cpf" type="text" required>
+          </div>
+          <div style="flex: 1;">
+            <label>Telefone</label>
+            <input [(ngModel)]="novoMembro.telefone" name="telefone" type="text">
+          </div>
+        </div>
+
+        <div class="row-inputs">
+          <div style="flex: 1; margin-right: 10px;">
+            <label>Cargo</label>
+            <select [(ngModel)]="novoMembro.cargo" name="cargo">
+              <option value="Membro">Membro</option>
+              <option value="Tesoureiro">Tesoureiro</option>
+              <option value="Vice-Presidente">Vice-Presidente</option>
+              <option value="Secretário">Secretário</option>
+              <option value="Coordenador">Coordenador</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label>Status</label>
+            <select [(ngModel)]="novoMembro.status" name="status">
+              <option value="Ativo">Ativo</option>
+              <option value="Inativo">Inativo</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Senha {{ modoEdicao() ? '(Deixe em branco para não alterar)' : '*' }}</label>
+        <input [(ngModel)]="novoMembro.senha" name="senha" type="password" [required]="!modoEdicao()">
+
+        <div class="modal-actions">
+          <button type="button" (click)="fecharModalForm()" class="btn-cancel">Cancelar</button>
+          <button type="submit" class="btn-save" [disabled]="loading()">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div *ngIf="modalDeleteAberto()" class="modal-overlay">
+    <div class="modal-content" style="text-align: center; width: 400px;">
+      <div style="font-size: 3rem; margin-bottom: 10px;">⚠️</div>
+      <h3>Tem certeza?</h3>
+      <p>Você vai remover <strong>{{ membroParaExclusao?.nome }}</strong> do sistema.</p>
+      
+      <div class="modal-actions" style="justify-content: center; margin-top: 20px;">
+        <button (click)="fecharModalDelete()" class="btn-cancel" style="background: #e5e7eb; color: #374151;">Cancelar</button>
+        <button (click)="confirmarExclusao()" class="btn-save" style="background: #dc2626; color: white;">Sim, remover</button>
+      </div>
+    </div>
+  </div>
+
 </div>

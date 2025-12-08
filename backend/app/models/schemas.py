@@ -66,8 +66,18 @@ class UsuarioBase(BaseModel):
             raise ValueError('Telefone deve ter 10 ou 11 dígitos')
         return telefone
 
-class UsuarioCreate(UsuarioBase):
-    senha: str = Field(..., min_length=6, max_length=100)
+class UsuarioCreate(BaseModel):
+    nome: str
+    email: str
+    senha: str
+    cpf: str
+    telefone: str
+    cargo: str 
+    
+    # Adicione estes campos como Opcionais
+    # Opcional porque o Presidente não vai ter ID para mandar no começo
+    centro_academico_id: Optional[int] = None 
+    departamento_id: Optional[int] = None
 
 class UsuarioUpdate(BaseModel):
     nome: Optional[str] = None
@@ -184,6 +194,10 @@ class SolicitacaoComunicacaoResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    # ADICIONE ESSES CAMPOS PARA O FRONT RECEBER:
+    user_id: int
+    cargo: str 
+    centro_academico_id: Optional[int] = None
 
 # --- Schemas de Patrimônio (MongoDB) ---
 # 👇 AQUI ESTAVA O PROBLEMA: Atualizei para incluir valor, tombo e localizacao
@@ -311,3 +325,57 @@ class SimpleMessageResponse(BaseModel):
 class MessageStatusResponse(BaseModel):
     message: str
     novo_status: Optional[str] = None
+    
+# ... (Mantenha os imports e outras classes) ...
+
+# --- ATUALIZE AS CLASSES DE COMUNICAÇÃO ---
+
+class PostagemCreate(BaseModel):
+    titulo: str
+    conteudo_texto: str
+    midia_destino: str
+    data_agendamento: datetime
+    anexos: List[str] = []
+
+class PostagemUpdate(BaseModel):
+    titulo: Optional[str] = None
+    conteudo_texto: Optional[str] = None
+    midia_destino: Optional[str] = None
+    data_agendamento: Optional[datetime] = None
+    anexos: Optional[List[str]] = None
+    status: Optional[str] = None  # 👈 Permite mudar status
+
+class PostagemResponse(BaseModel):
+    id: str
+    titulo: str
+    conteudo_texto: str
+    midia_destino: str
+    data_agendamento: datetime
+    anexos: List[str]
+    autor_id: int
+    status: str
+    criado_em: Optional[datetime] = None
+
+class SolicitacaoComunicacaoCreate(BaseModel):
+    titulo: str
+    descricao: str
+    prazo_sugerido: date
+    publico_alvo: str
+
+class SolicitacaoComunicacaoUpdate(BaseModel): # 👈 Necessário para editar docs
+    titulo: Optional[str] = None
+    descricao: Optional[str] = None
+    prazo_sugerido: Optional[date] = None
+    publico_alvo: Optional[str] = None
+    status: Optional[str] = None  # 👈 Permite mudar status
+
+class SolicitacaoComunicacaoResponse(BaseModel):
+    id: str
+    titulo: str
+    descricao: str
+    prazo_sugerido: datetime
+    publico_alvo: str
+    solicitante_id: int
+    solicitante_nome: str
+    data_solicitacao: datetime
+    status: str

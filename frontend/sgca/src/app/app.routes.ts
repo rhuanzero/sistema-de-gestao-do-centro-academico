@@ -9,6 +9,7 @@ import { PatrimonioComponent } from './pages/patrimonio/patrimonio';
 import { Login } from './pages/login/login';
 import { Layout } from './layout/layout';
 
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -18,9 +19,16 @@ export const routes: Routes = [
   
   {
     path: '',
-    component: Layout, // O Pai é o Layout
+    component: Layout,
+    canActivate: [authGuard], // O Pai é o Layout
     children: [
-      { path: 'dashboard', component: Home },
+
+      { path: '', redirectTo: 'home', pathMatch: 'full' },
+
+     { 
+        path: 'home', 
+        loadComponent: () => import('./pages/home/home').then(m => m.Home)
+      },
       { path: 'membros', component: Membros },
       { path: 'financeiro', component: Financeiro },
       { path: 'eventos', component: Eventos },

@@ -1,63 +1,45 @@
-<div class="login-wrapper" style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f3f4f6; font-family: 'Segoe UI', sans-serif;">
-  
-  <div class="login-card" style="background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px;">
-    
-    <div style="text-align: center; margin-bottom: 2rem;">
-      <h2 style="color: #1f2937; margin: 0; font-size: 1.8rem;">Bem-vindo</h2>
-      <p style="color: #6b7280; margin-top: 0.5rem;">Faça login no SGCA</p>
-    </div>
+<div class="login-container">
+  <div class="login-card">
+    <h2>Acesso ao Sistema</h2>
+    <p class="subtitle">Faça login para continuar</p>
 
     <form (ngSubmit)="fazerLogin()">
       
-      <div style="margin-bottom: 1.5rem;">
-        <label for="email" style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Email ou Usuário</label>
+      <div class="form-group">
+        <label for="email">Email / Usuário</label>
         <input 
           type="text" 
           id="email" 
           name="email" 
-          [(ngModel)]="email" 
-          required 
+          [(ngModel)]="credenciais.username" 
           placeholder="seu@email.com"
-          style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; outline: none; transition: border-color 0.2s;"
-          onfocus="this.style.borderColor='#2563eb'"
-          onblur="this.style.borderColor='#d1d5db'"
+          required
         >
       </div>
 
-      <div style="margin-bottom: 1.5rem;">
-        <label for="password" style="display: block; margin-bottom: 0.5rem; color: #374151; font-weight: 500;">Senha</label>
+      <div class="form-group">
+        <label for="password">Senha</label>
         <input 
           type="password" 
           id="password" 
           name="password" 
-          [(ngModel)]="password" 
-          required 
-          placeholder="********"
-          style="width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; outline: none; transition: border-color 0.2s;"
-          onfocus="this.style.borderColor='#2563eb'"
-          onblur="this.style.borderColor='#d1d5db'"
+          [(ngModel)]="credenciais.password" 
+          placeholder="••••••••"
+          required
         >
-      </div>
-
-      <div *ngIf="erro" style="background-color: #fee2e2; color: #991b1b; padding: 0.75rem; border-radius: 6px; margin-bottom: 1.5rem; text-align: center; font-size: 0.9rem; border: 1px solid #fecaca;">
-        {{ erro }}
       </div>
 
       <button 
         type="submit" 
-        [disabled]="!email || !password"
-        style="width: 100%; background-color: #2563eb; color: white; padding: 0.85rem; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background-color 0.2s; font-size: 1rem;"
-        onmouseover="this.style.backgroundColor='#1d4ed8'"
-        onmouseout="this.style.backgroundColor='#2563eb'"
-      >
-        Entrar
+        class="btn-login" 
+        [disabled]="!credenciais.username || !credenciais.password">
+        ENTRAR
       </button>
 
     </form>
     
-    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: #6b7280;">
-      Esqueceu a senha? Fale com a presidência.
+    <div class="footer-links">
+      <a href="#">Esqueceu a senha?</a>
     </div>
-
   </div>
 </div>

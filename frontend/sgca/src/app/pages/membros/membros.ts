@@ -1,7 +1,19 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms'; // <--- IMPORTANTE PARA O FORMULÁRIO
-import { ApiService } from '../../services/apiservice';
+import { HttpClient } from '@angular/common/http';
+import { FormsModule } from '@angular/forms'; // <--- IMPORTANTE: Adicione isso!
+import { Router } from '@angular/router';
+
+interface Membro {
+  id: number | null; // Pode ser null na criação
+  nome: string;
+  email: string;
+  cargo: string;
+  status: string;
+  telefone?: string;
+  cpf?: string;
+  senha?: string; // Opcional, usado só no envio
+}
 
 @Component({
   selector: 'app-membros',
@@ -11,145 +23,172 @@ import { ApiService } from '../../services/apiservice';
   styleUrls: ['./membros.css']
 })
 export class Membros implements OnInit {
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:8000/membros'; // Verifique se é /members ou /membros
+  private router = inject(Router);
 
-  membros: any[] = [];
-  carregando = false;
+  // Signals de Dados
+  membros = signal<Membro[]>([]);
+  loading = signal(false);
+  cargoUsuarioLogado = signal<string>('');
   
-  // Controle do Modal
-  mostrarModal = false;
+  // Signals de Controle Visual
+  modalFormAberto = signal(false);
+  modalDeleteAberto = signal(false);
+  modoEdicao = signal(false); // false = Criando, true = Editando
+
+  // Dados do Formulário
+  novoMembro: Membro = this.getEmptyMembro();
+  membroParaExclusao: Membro | null = null;
+
+  ehPresidente = computed(() => {
+    return this.cargoUsuarioLogado().toLowerCase() === 'presidente';
+  });
+
+ ngOnInit() {
+  this.carregarUsuarioLogado();
   
-  // Objeto temporário para o formulário
-  membroForm: any = {
-    id: null,
-    nome: '',
-    email: '',
-    cpf: '',
-    telefone: '',
-    cargo: 'Membro', // Valor padrão
-    departamento_id: null,
-    centro_academico_id: 1 // Ajuste conforme seu sistema
-  };
+  // ADICIONE ESSA LINHA PARA TESTAR 👇
+  console.log('Cargo no LocalStorage:', localStorage.getItem('user_role'));
+  console.log('Sou presidente?', this.ehPresidente());
+  
+  this.buscarMembros();
+}
 
-  constructor(
-    private apiService: ApiService,
-    private cd: ChangeDetectorRef
-  ) {}
-
-  ngOnInit() {
-    this.carregarMembros();
+  carregarUsuarioLogado() {
+    const role = localStorage.getItem('user_role') || '';
+    this.cargoUsuarioLogado.set(role);
   }
 
-  carregarMembros() {
-    this.carregando = true;
-    this.apiService.getMembers().subscribe({
-      next: (dados: any[]) => {
-        this.membros = dados;
-        this.carregando = false;
-        this.cd.detectChanges();
+  buscarMembros() {
+    this.loading.set(true);
+    this.http.get<Membro[]>(this.apiUrl).subscribe({
+      next: (data) => {
+        this.membros.set(data);
+        this.loading.set(false);
       },
-      error: (e: any) => console.error(e)
+      error: (err) => {
+        console.error('Erro ao buscar membros', err);
+        this.loading.set(false);
+      }
     });
   }
 
-  // --- AÇÕES DO MODAL ---
-  
-abrirModalCriacao() {
-    this.membroForm = { 
-      id: null, 
-      nome: '', 
-      email: '', 
-      cpf: '', 
-      telefone: '', 
-      cargo: 'Membro', 
-      centro_academico_id: 1,
-      senha: '' // <--- ADICIONE ISSO AQUI! O Backend exige senha para criar.
-    };
-    this.mostrarModal = true;
+  // --- AÇÕES DO MODAL DE FORMULÁRIO (CRIAR/EDITAR) ---
+
+  abrirModalCadastro() {
+    if (!this.ehPresidente()) return;
+    this.modoEdicao.set(false);
+    this.novoMembro = this.getEmptyMembro();
+    this.modalFormAberto.set(true);
   }
 
-  abrirModalEdicao(membro: any) {
-    // Copia os dados do membro clicado para o formulário (sem mexer na tabela ainda)
-    this.membroForm = { ...membro }; 
-    this.mostrarModal = true;
+  editarMembro(membro: Membro) {
+    if (!this.ehPresidente()) return;
+    this.modoEdicao.set(true);
+    // Copia os dados para não alterar a tabela em tempo real antes de salvar
+    this.novoMembro = { ...membro, senha: '' }; 
+    this.modalFormAberto.set(true);
   }
 
-  fecharModal() {
-    this.mostrarModal = false;
+  fecharModalForm() {
+    this.modalFormAberto.set(false);
   }
 
- salvar() {
-    // 1. PREPARAÇÃO DOS DADOS (Cópia e Limpeza)
-    const dadosParaEnviar = { ...this.membroForm };
+  salvarMembro() {
+    this.loading.set(true);
 
-    if (!dadosParaEnviar.cpf) dadosParaEnviar.cpf = null;
-    if (!dadosParaEnviar.telefone) dadosParaEnviar.telefone = null;
-    if (!dadosParaEnviar.departamento_id) dadosParaEnviar.departamento_id = null;
-    dadosParaEnviar.centro_academico_id = Number(dadosParaEnviar.centro_academico_id);
-
-    // Validação de Senha para novos membros
-    if (!dadosParaEnviar.id && !dadosParaEnviar.senha) {
-        alert("⚠️ A senha é obrigatória!");
-        return;
-    }
-    // Remove senha vazia na edição
-    if (dadosParaEnviar.id && !dadosParaEnviar.senha) {
-        delete dadosParaEnviar.senha;
-    }
-
-    // 2. ENVIO PARA API
-    if (this.membroForm.id) {
-      // --- EDIÇÃO ---
-      this.apiService.updateMember(this.membroForm.id, dadosParaEnviar).subscribe({
-        next: () => {
-          // alert('Membro atualizado!'); <--- REMOVEMOS ISSO
-          this.fecharModal();      // 1º Fecha a janela
-          this.carregarMembros();  // 2º Atualiza a tabela no fundo
+    if (this.modoEdicao() && this.novoMembro.id) {
+      // --- EDIÇÃO (PUT) ---
+      this.http.put<Membro>(`${this.apiUrl}/${this.novoMembro.id}`, this.novoMembro).subscribe({
+        next: (membroAtualizado) => {
+          this.membros.update(lista => lista.map(m => m.id === membroAtualizado.id ? membroAtualizado : m));
+          this.loading.set(false);
+          this.fecharModalForm();
+          alert('Membro atualizado!');
         },
-        error: (e: any) => {
-          console.error(e);
-          alert('Erro ao editar: ' + (e.error.detail || e.message));
+        error: (err) => {
+          console.error(err);
+          this.loading.set(false);
+          alert('Erro ao atualizar. Verifique os dados.');
         }
       });
     } else {
-      // --- CRIAÇÃO ---
-      this.apiService.createMember(dadosParaEnviar).subscribe({
-        next: () => {
-          // alert('Membro criado!'); <--- REMOVEMOS ISSO TAMBÉM
-          this.fecharModal();      // 1º Fecha a janela na hora
-          this.carregarMembros();  // 2º A tabela recarrega sozinha
+      // --- CRIAÇÃO (POST) ---
+      // Garante que o ID não vai no envio se for criação
+      const { id, ...payload } = this.novoMembro;
+      
+      this.http.post<Membro>(this.apiUrl, payload).subscribe({
+        next: (novoMembroCriado) => {
+          this.membros.update(lista => [...lista, novoMembroCriado]);
+          this.loading.set(false);
+          this.fecharModalForm();
+          alert('Membro criado com sucesso!');
         },
-        error: (e) => {
-          console.error(e);
-          const msg = e.error.detail ? JSON.stringify(e.error.detail) : e.message;
-          alert('Erro ao criar: ' + msg);
+        error: (err) => {
+          console.error(err);
+          this.loading.set(false);
+          alert('Erro ao criar membro. Email ou CPF já existem?');
         }
       });
     }
   }
 
-// Adicione isso DENTRO da classe MembrosComponent, antes do último }
+  // --- AÇÕES DO MODAL DE EXCLUSÃO ---
 
-  excluir(membro: any) {
-    if (confirm(`Tem certeza que deseja excluir ${membro.nome}?`)) {
-      
-      this.apiService.deleteMember(membro.id).subscribe({
-        next: () => {
-          // 1. REMOÇÃO VISUAL IMEDIATA (O Pulo do Gato 🐱)
-          // Filtra a lista mantendo apenas quem tem ID diferente do excluído
-          this.membros = this.membros.filter(m => m.id !== membro.id);
-          
-          // 2. Força o Angular a repintar a tabela agora
-          this.cd.detectChanges();
-          
-          // (Opcional) Só pra garantir a sincronia total, busca do banco em background
-          // this.carregarMembros(); 
-        },
-        error: (e) => {
-          console.error(e);
-          const msg = e.error.detail || e.message;
-          alert('Erro ao excluir: ' + msg);
-        }
-      });
-    }
+  prepararExclusao(membro: Membro) {
+    if (!this.ehPresidente()) return;
+    this.membroParaExclusao = membro;
+    this.modalDeleteAberto.set(true);
+  }
+
+  confirmarExclusao() {
+    if (!this.membroParaExclusao?.id) return;
+
+    this.loading.set(true);
+    this.http.delete(`${this.apiUrl}/${this.membroParaExclusao.id}`).subscribe({
+      next: () => {
+        this.membros.update(lista => lista.filter(m => m.id !== this.membroParaExclusao!.id));
+        this.loading.set(false);
+        this.fecharModalDelete();
+      },
+      error: (err) => {
+        console.error(err);
+        this.loading.set(false);
+        alert('Erro ao excluir.');
+      }
+    });
+  }
+
+  fecharModalDelete() {
+    this.modalDeleteAberto.set(false);
+    this.membroParaExclusao = null;
+  }
+
+  // --- UTILITÁRIOS ---
+
+  private getEmptyMembro(): Membro {
+    return {
+      id: null,
+      nome: '',
+      email: '',
+      cargo: 'Membro', // Valor padrão
+      status: 'Ativo',
+      cpf: '',
+      telefone: '',
+      senha: ''
+    };
+  }
+
+  getStatusClass(status: string): string {
+    return status === 'Ativo' ? 'status-published' : 'status-cancelled';
+  }
+
+  logout() {
+    // Limpa tudo do navegador
+    localStorage.clear();
+    
+    // Manda o usuário de volta pro login
+    this.router.navigate(['/login']);
   }
 }

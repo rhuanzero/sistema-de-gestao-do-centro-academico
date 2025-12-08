@@ -1,81 +1,130 @@
-<div class="page-header">
-  <div class="header-title">
-    <h2>📅 Agenda de Eventos</h2>
-    <p>Próximas atividades e reuniões do CA</p>
-  </div>
-  <button class="btn-primary" (click)="abrirModal()">+ Novo Evento</button>
-</div>
-
-<div class="events-grid">
+<div class="container-eventos">
   
-  <div class="event-card" *ngFor="let ev of eventos">
-    
-    <div class="event-date">
-      <span class="day">{{ ev.data_inicio | date:'dd' }}</span>
-      <span class="month">{{ ev.data_inicio | date:'MMM' }}</span>
+  <header class="header-eventos">
+    <div>
+      <h2>📅 Gestão de Eventos</h2>
+      <p style="color: #666; font-size: 0.9rem;">Organize o calendário acadêmico e festas.</p>
     </div>
+    
+    <button *ngIf="!modoCriacao" (click)="resetarForm(); modoCriacao = true" class="btn-novo">
+      + Agendar Evento
+    </button>
+    <button *ngIf="modoCriacao" (click)="modoCriacao = false" class="btn-voltar">
+      ⬅ Voltar para Lista
+    </button>
+  </header>
 
-    <div class="event-content">
-      <h3>{{ ev.titulo }}</h3>
+  <div *ngIf="modoCriacao" class="form-container">
+    <h3 style="margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+      {{ idEmEdicao() ? '✏️ Editar Evento' : '➕ Novo Agendamento' }}
+    </h3>
+    
+    <form (ngSubmit)="agendarEvento()">
       
-      <p class="event-meta">
-        🕒 {{ ev.data_inicio | date:'HH:mm' }} - {{ ev.data_fim | date:'HH:mm' }}
-        <br>
-        📍 {{ ev.local }}
-      </p>
+      <div class="form-group">
+        <label>Título do Evento *</label>
+        <input [(ngModel)]="novoEvento.titulo" name="titulo" required type="text" placeholder="Ex: Calourada 2024">
+      </div>
 
-      <p class="event-desc">{{ ev.descricao }}</p>
+      <div class="form-group">
+        <label>Organizador</label>
+        <input [(ngModel)]="novoEvento.organizador" name="organizador" type="text" placeholder="Ex: Gestão 2025 (Opcional)">
+      </div>
 
-      <div class="event-footer">
-        <small>👤 {{ ev.organizador }}</small>
-        
-        <button class="btn-delete" (click)="excluir(ev.id || ev._id)">
-          Cancelar
+      <div class="form-group">
+        <label>Descrição</label>
+        <textarea [(ngModel)]="novoEvento.descricao" name="descricao" rows="3" placeholder="Detalhes do evento..."></textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Data Início *</label>
+          <input [(ngModel)]="novoEvento.data_inicio" name="data_inicio" type="datetime-local" required>
+        </div>
+        <div class="form-group half">
+          <label>Data Fim *</label>
+          <input [(ngModel)]="novoEvento.data_fim" name="data_fim" type="datetime-local" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Local</label>
+        <input [(ngModel)]="novoEvento.local" name="local" type="text" placeholder="Ex: Auditório A">
+      </div>
+
+      <div class="form-actions" style="margin-top: 20px;">
+        <button type="submit" [disabled]="loading()" class="btn-salvar">
+          {{ loading() ? 'Salvando...' : (idEmEdicao() ? 'Salvar Alterações' : 'Confirmar Agendamento') }}
         </button>
       </div>
+    </form>
+  </div>
+
+  <div *ngIf="!modoCriacao" class="lista-container">
+    
+    <div *ngIf="eventos().length === 0 && !loading()" class="empty-state">
+      <div style="text-align: center; padding: 40px; color: #999;">
+        <span style="font-size: 3rem;">📅</span>
+        <p>Nenhum evento agendado ainda.</p>
+      </div>
+    </div>
+
+    <div *ngIf="loading()" style="text-align: center; padding: 20px;">
+      Carregando eventos...
+    </div>
+
+    <div class="cards-grid">
+      <div *ngFor="let evento of eventos()" class="evento-card">
+        
+        <div class="evento-date">
+          <span class="day">{{ evento.data_inicio | date:'dd' }}</span>
+          <span class="month">{{ evento.data_inicio | date:'MMM' }}</span>
+          <span class="year" style="font-size: 0.7rem; color: #666;">{{ evento.data_inicio | date:'yyyy' }}</span>
+        </div>
+        
+        <div class="evento-info">
+          <h4>{{ evento.titulo }}</h4>
+          
+          <p class="organizador" style="color: #2563eb; font-weight: 600; font-size: 0.85rem; margin: 5px 0;">
+            👤 {{ evento.organizador || 'Organização Geral' }}
+          </p>
+
+          <p class="local" style="color: #555; font-size: 0.9rem;">
+            📍 {{ evento.local }}
+          </p>
+          <p class="desc" style="color: #777; font-size: 0.9rem; margin-top: 5px;">
+            {{ evento.descricao }}
+          </p>
+        </div>
+
+        <div class="evento-actions">
+           <button (click)="editarEvento(evento)" class="btn-icon btn-editar" title="Editar">✏️</button>
+           <button (click)="abrirModalExclusao(evento.id)" class="btn-icon btn-lixeira" title="Excluir">🗑️</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <div *ngIf="modalExclusao().show" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-icon">⚠️</div>
+      <h3>Excluir Evento?</h3>
+      <p>Tem certeza que deseja remover este evento? Essa ação não pode ser desfeita.</p>
+      
+      <div class="modal-actions">
+        <button (click)="fecharModal()" class="btn-cancelar">Cancelar</button>
+        <button (click)="confirmarExclusao()" class="btn-confirmar">Sim, Excluir</button>
+      </div>
     </div>
   </div>
 
-  <div class="no-events" *ngIf="eventos.length === 0">
-    <p>Nenhum evento agendado.</p>
+  <div *ngIf="feedback().show" class="toast-notification" [ngClass]="feedback().type">
+    <span class="toast-icon">
+      {{ feedback().type === 'success' ? '✅' : '❌' }}
+    </span>
+    <span class="toast-message">{{ feedback().msg }}</span>
   </div>
 
-</div>
-
-<div class="modal-overlay" *ngIf="mostrarModal">
-  <div class="modal-content">
-    <h3>Novo Evento</h3>
-    
-    <form (ngSubmit)="salvar()">
-      
-      <label>Título do Evento:</label>
-      <input type="text" [(ngModel)]="novoEvento.titulo" name="titulo" required placeholder="Ex: Calourada 2026">
-
-      <div style="display: flex; gap: 15px;">
-        <div style="flex: 1;">
-          <label>Início:</label>
-          <input type="datetime-local" [(ngModel)]="novoEvento.data_inicio" name="d_ini" required>
-        </div>
-        <div style="flex: 1;">
-          <label>Fim:</label>
-          <input type="datetime-local" [(ngModel)]="novoEvento.data_fim" name="d_fim" required>
-        </div>
-      </div>
-
-      <label>Local:</label>
-      <input type="text" [(ngModel)]="novoEvento.local" name="local" required placeholder="Ex: Auditório Principal">
-
-      <label>Organizador:</label>
-      <input type="text" [(ngModel)]="novoEvento.organizador" name="organizador" required placeholder="Ex: Diretoria de Eventos">
-      
-      <label>Descrição:</label>
-      <textarea [(ngModel)]="novoEvento.descricao" name="descricao" rows="3" placeholder="Detalhes do evento..."></textarea>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" (click)="mostrarModal=false">Cancelar</button>
-        <button type="submit" class="btn-save">Agendar</button>
-      </div>
-
-    </form>
-  </div>
 </div>

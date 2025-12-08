@@ -2,8 +2,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { Evento, Patrimonio } from '../models/api'; 
-
 
 @Injectable({
   providedIn: 'root'
@@ -17,10 +15,13 @@ export class ApiService {
     private router: Router
   ) {}
 
- login(credenciais: any): Observable<any> {
-    // Transforma o JSON em formato de formulário (username=...&password=...)
+  // ==========================================================
+  // 🔐 AUTENTICAÇÃO (AUTH)
+  // ==========================================================
+
+  login(credenciais: any): Observable<any> {
     const body = new HttpParams()
-      .set('username', credenciais.username) // O FastAPI exige o campo 'username'
+      .set('username', credenciais.username)
       .set('password', credenciais.password);
 
     return this.http.post(`${this.baseUrl}/auth/login`, body.toString(), {
@@ -28,53 +29,110 @@ export class ApiService {
     });
   }
 
-  logout() {
-    localStorage.removeItem('token');
-    this.router.navigate(['/login']);
-  }
-
   getUser(): Observable<any> {
     return this.http.get(`${this.baseUrl}/auth/me`);
   }
 
-  // --- EVENTOS ---
-  getEventos(): Observable<Evento[]> {
-    return this.http.get<Evento[]>(`${this.baseUrl}/events/`);
+  logout() {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    this.router.navigate(['/login']);
   }
 
-  // Aceita 'any' na criação para não reclamar da falta de ID
+  // ==========================================================
+  // 📢 COMUNICAÇÃO (POSTS E SOLICITAÇÕES) - 👇 ATUALIZADO AQUI
+  // ==========================================================
+
+  getPosts(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/communication/posts`);
+  }
+
+  createPost(post: any): Observable<any> {
+    const payload = {
+      titulo: post.titulo,
+      conteudo_texto: post.conteudo_texto || 'Sem conteúdo',
+      midia_destino: post.midia_destino,
+      data_agendamento: post.data_agendamento,
+      anexos: [] 
+    };
+    return this.http.post(`${this.baseUrl}/communication/create_posts`, payload);
+  }
+
+  // 👇 ESSE É O MÉTODO QUE FALTAVA (updatePost)
+  updatePost(id: string, post: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/communication/posts/${id}`, post);
+  }
+
+  getRequests(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/communication/requests`);
+  }
+
+  createRequest(req: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/communication/requests`, req);
+  }
+
+  // 👇 ESSE É O QUE DEU O ERRO (updateRequest)
+  updateRequest(id: string, req: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/communication/requests/${id}`, req);
+  }
+
+  // ==========================================================
+  // 📦 PATRIMÔNIO
+  // ==========================================================
+
+  getPatrimonios(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/patrimonio/`);
+  }
+
+  createPatrimonio(item: any): Observable<any> {
+    const payload = {
+      nome: String(item.nome),
+      tombo: item.tombo ? String(item.tombo) : '',
+      valor: parseFloat(item.valor) || 0,
+      localizacao: item.localizacao ? String(item.localizacao) : 'Não informado',
+      descricao: item.descricao || 'Item cadastrado via sistema',
+      status: item.estado || 'Disponível',
+      data_aquisicao: new Date().toISOString().split('T')[0]
+    };
+    return this.http.post(`${this.baseUrl}/patrimonio/`, payload);
+  }
+
+  updatePatrimonio(id: string, item: any): Observable<any> {
+    const payload = { ...item };
+    if (item.estado) payload.status = item.estado;
+    return this.http.put(`${this.baseUrl}/patrimonio/${id}`, payload);
+  }
+
+  deletePatrimonio(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/patrimonio/${id}`);
+  }
+
+  // ==========================================================
+  // 📅 EVENTOS
+  // ==========================================================
+
+  getEventos(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/events/`);
+  }
+
   createEvento(evento: any): Observable<any> {
     return this.http.post(`${this.baseUrl}/events/`, evento);
   }
 
-  // O componente estava chamando deleteEvent, mas aqui era deleteEvento.
-  // Vamos manter o padrão deleteEvento e corrigir no componente.
+  updateEvento(id: string, evento: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/events/${id}`, evento);
+  }
+
   deleteEvento(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/events/${id}`);
   }
 
-  // ... (mantenha os outros métodos de evento/patrimonio que já funcionavam)
+  // ==========================================================
+  // 💰 FINANCEIRO
+  // ==========================================================
 
-  // --- MEMBROS (Faltava isso!) ---
-  getMembers(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.baseUrl}/users/`); 
-  }
-
-  createMember(member: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/auth/register`, member); 
-  }
-
-  updateMember(id: string, data: any): Observable<any> {
-    return this.http.put(`${this.baseUrl}/users/${id}`, data);
-  }
-
-  deleteMember(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/users/${id}`);
-  }
-
-  // --- FINANCEIRO (Faltava isso!) ---
   getBalance(): Observable<any> {
-    // Exemplo de rota
     return this.http.get(`${this.baseUrl}/financeiro/balance`);
   }
 
@@ -86,47 +144,23 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/financeiro/transactions`, transaction);
   }
 
-  deletePatrimonio(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/patrimonio/${id}`);
+  // ==========================================================
+  // 👥 MEMBROS (USUÁRIOS)
+  // ==========================================================
+
+  getMembers(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/users/`);
   }
 
-  getPatrimonios(): Observable<Patrimonio[]> {
-    return this.http.get<Patrimonio[]>(`${this.baseUrl}/patrimonio/`);
+  createMember(member: any): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/register`, member);
   }
 
-createPatrimonio(item: any): Observable<any> {
-    const payload = {
-      // Campos de Texto (garante string)
-      nome: String(item.nome),
-      tombo: item.tombo ? String(item.tombo) : '', 
-      localizacao: item.localizacao ? String(item.localizacao) : 'Não informado',
-      descricao: 'Item cadastrado via sistema', // O Backend provavelmente exige esse campo!
-      
-      // Campo de Valor (garante número float)
-      valor: parseFloat(item.valor), 
-
-      // Campo de Status (Mapeia 'estado' do front para 'status' do back)
-      status: item.estado, 
-      
-      // Campo de Data (Garante YYYY-MM-DD)
-      data_aquisicao: new Date().toISOString().split('T')[0]
-    };
-
-    console.log('Enviando Payload:', payload); // Debug no console do navegador
-
-    return this.http.post(`${this.baseUrl}/patrimonio/`, payload);
+  updateMember(id: string, data: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/users/${id}`, data);
   }
 
-  // Faça o mesmo para o UPDATE se necessário
-  updatePatrimonio(id: string, item: any): Observable<any> {
-    const payload = {
-      ...item, // Copia tudo
-      status: item.estado, // Garante o campo status
-      // Se precisar converter data de novo, faça aqui
-    };
-    // Remove o campo 'estado' se o backend for chato e não aceitar campos extras
-    delete payload.estado; 
-    
-    return this.http.put(`${this.baseUrl}/patrimonio/${id}`, payload);
+  deleteMember(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/users/${id}`);
   }
 }

@@ -1,21 +1,51 @@
-<div class="section-title">
-  <h2>Dashboard Executivo</h2>
-  <p>Visão geral das operações do Centro Acadêmico</p>
+<div class="home-container">
+  
+  <header class="welcome-header">
+    <h1>👋 Olá, {{ usuarioNome() }}</h1>
+    <p>Bem-vindo ao <strong>SGCA</strong>. Selecione um módulo abaixo:</p>
+  </header>
+
+  <div class="dashboard-grid">
+    
+    <a routerLink="/patrimonio" class="card card-patrimonio">
+      <div class="card-icon">📦</div>
+      <div class="card-content">
+        <h3>Patrimônio</h3>
+        <p>Inventário, bens e equipamentos.</p>
+      </div>
+    </a>
+
+    <a routerLink="/eventos" class="card card-eventos">
+      <div class="card-icon">📅</div>
+      <div class="card-content">
+        <h3>Eventos</h3>
+        <p>Festas, calendário e atividades.</p>
+      </div>
+    </a>
+
+    <a routerLink="/comunicacao" class="card card-comunicacao">
+      <div class="card-icon">📢</div>
+      <div class="card-content">
+        <h3>Comunicação</h3>
+        <p>Postagens, redes sociais e atas.</p>
+      </div>
+    </a>
+
+    <a routerLink="/financeiro" class="card card-financeiro">
+      <div class="card-icon">💰</div>
+      <div class="card-content">
+        <h3>Financeiro</h3>
+        <p>Fluxo de caixa e saldo.</p>
+      </div>
+    </a>
+
+    <a routerLink="/membros" class="card card-membros">
+      <div class="card-icon">👥</div>
+      <div class="card-content">
+        <h3>Membros</h3>
+        <p>Gestão de associados.</p>
+      </div>
+    </a>
+
+  </div>
 </div>
-
-<section class="stats-grid">
-  <div class="stat-card" *ngFor="let item of ['Membros', 'Transações', 'Eventos', 'Comunicação', 'Patrimônio', 'Total']">
-    <span class="stat-number">0</span>
-    <span class="stat-label">{{ item }}</span>
-  </div>
-</section>
-
-<section class="modules-grid">
-  <div class="module-card">
-    <div class="card-content">
-      <h3>Gestão de Acesso e Membros</h3>
-      <p>Controle de permissões e hierarquia funcional</p>
-    </div>
-    <button class="btn-acessar">Acessar módulo</button>
-  </div>
-  </section>
